@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Umbral — Iniciar sesión</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient-bg" aria-hidden="true"></div>
+
+  <main class="auth-page">
+    <section class="auth-box">
+      <div class="auth-brand">
+        <h1>Umbral</h1>
+        <p>Inicia sesión para entrar al muro o al espacio de creadores</p>
+      </div>
+
+      <form id="login-page-form">
+        <label class="field-label" for="login-username">Apodo o nombre de canal</label>
+        <input
+          type="text"
+          id="login-username"
+          placeholder="Ej. fredred156 o RelatosNocturnos"
+          required
+        />
+
+        <label class="field-label" for="login-password">Contraseña</label>
+        <input
+          type="password"
+          id="login-password"
+          placeholder="Tu contraseña"
+          required
+        />
+
+        <p id="login-error" class="form-error" style="display: none;"></p>
+
+        <button type="submit" class="btn-primary">
+          <span>Iniciar sesión</span>
+        </button>
+      </form>
+
+      <div class="auth-switch">
+        ¿No tienes cuenta? <a href="registro.html">Crear cuenta</a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const USERS_KEY = "umbral_users_v1";
+    const SESSION_KEY = "umbral_active_session_v1";
+
+    const loginForm = document.getElementById("login-page-form");
+    const usernameInput = document.getElementById("login-username");
+    const passwordInput = document.getElementById("login-password");
+    const errorEl = document.getElementById("login-error");
+
+    // Si ya hay sesión activa, pasa directo a la app principal
+    if (localStorage.getItem(SESSION_KEY)) {
+      window.location.href = "index.html";
+    }
+
+    loginForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      errorEl.style.display = "none";
+
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+      const user = users.find((u) => u.username.toLowerCase() === username.toLowerCase());
+
+      if (!user || user.password !== password) {
+        errorEl.textContent = "Apodo o contraseña incorrectos.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      localStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          channel: user.channel || ""
+        })
+      );
+
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>

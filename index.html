@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Umbral — Muro de Relatos y Creadores</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="fb-dark-purple-theme">
+  <div class="ambient-bg" aria-hidden="true"></div>
+
+  <!-- Barra superior fija -->
+  <header class="fb-topbar">
+    <div class="fb-topbar-left">
+      <div class="fb-left-profile-wrap" id="top-profile-wrap">
+        <button
+          type="button"
+          class="fb-avatar-trigger"
+          id="top-avatar-btn"
+          aria-label="Abrir menú de perfil"
+          aria-expanded="false"
+        >
+          U
+        </button>
+
+        <div class="fb-profile-dropdown" id="left-profile-menu" role="menu">
+          <a href="perfil.html" class="fb-menu-user-card" role="menuitem">
+            <span class="fb-menu-avatar-slot" id="menu-user-avatar">U</span>
+            <span class="fb-menu-user-meta">
+              <strong id="hover-profile-name">Mi perfil</strong>
+              <small id="hover-profile-handle">@usuario</small>
+            </span>
+          </a>
+
+          <div class="fb-menu-stats-mini">
+            <span><strong id="hover-followers-count">0</strong> seguidores</span>
+            <span>·</span>
+            <span><strong id="hover-following-count">0</strong> siguiendo</span>
+          </div>
+
+          <hr class="fb-menu-divider" />
+
+          <a href="perfil.html" class="fb-menu-item" role="menuitem">👤 Ver perfil</a>
+          <a href="editar-perfil.html" class="fb-menu-item" role="menuitem">✏️ Editar perfil</a>
+          <button type="button" class="fb-menu-item" id="menu-open-chat-hub-btn" role="menuitem">
+            💬 Acuerdos y chat
+          </button>
+
+          <hr class="fb-menu-divider" />
+
+          <button type="button" class="fb-menu-item fb-menu-danger" id="menu-logout-btn" role="menuitem">
+            🚪 Cerrar sesión
+          </button>
+        </div>
+      </div>
+
+      <a href="index.html" class="fb-brand-wordmark">UMBRAL</a>
+
+      <label class="fb-search-box" aria-label="Buscar en Umbral">
+        <span>🔍</span>
+        <input
+          type="search"
+          id="feed-search-input"
+          placeholder="Buscar relatos o creadores..."
+          autocomplete="off"
+        />
+      </label>
+    </div>
+
+    <nav class="fb-topbar-center" aria-label="Secciones principales">
+      <button type="button" class="fb-nav-tab tab-btn is-active" data-tab="stories-view">
+        <span>📖</span>
+        <span class="fb-nav-label">Relatos</span>
+      </button>
+      <button
+        type="button"
+        class="fb-nav-tab tab-btn is-hidden"
+        id="creators-tab-btn"
+        data-tab="creators-view"
+      >
+        <span>🎬</span>
+        <span class="fb-nav-label">Creadores</span>
+      </button>
+    </nav>
+
+    <div class="fb-topbar-right">
+      <span id="session-status" class="session-chip">Cargando sesión...</span>
+
+      <div class="notif-dropdown-wrap" id="notif-dropdown-wrap">
+        <button
+          type="button"
+          class="fb-icon-circle-btn"
+          id="bell-toggle-btn"
+          aria-label="Notificaciones"
+          aria-expanded="false"
+        >
+          🔔
+          <span class="notif-badge is-hidden" id="notif-badge">0</span>
+        </button>
+
+        <section
+          class="notifications-popover fb-notif-panel"
+          id="notifications-popover"
+          aria-label="Notificaciones"
+        >
+          <div class="fb-notif-header">
+            <h3>Notificaciones</h3>
+            <button type="button" class="btn-mini" id="mark-read-btn">Marcar leídas</button>
+          </div>
+
+          <div class="fb-notif-tabs">
+            <button type="button" class="fb-filter-chip is-active" id="notif-filter-all">Todas</button>
+            <button type="button" class="fb-filter-chip" id="notif-filter-unread">No leídas</button>
+          </div>
+
+          <div id="notifications-list" class="notifications-list"></div>
+        </section>
+      </div>
+
+      <div class="fb-settings-wrap" id="settings-dropdown-wrap">
+        <button
+          type="button"
+          class="fb-icon-circle-btn"
+          id="settings-toggle-btn"
+          aria-label="Configuraciones"
+          aria-expanded="false"
+        >
+          ⚙️
+        </button>
+
+        <div class="fb-settings-popover" id="settings-popover" role="menu">
+          <div class="fb-settings-title">
+            <span>⚙️ Configuraciones</span>
+          </div>
+
+          <button type="button" class="fb-settings-row" id="setting-toggle-follow-privacy">
+            <span class="fb-settings-meta">
+              <strong>Listas de seguidores públicas</strong>
+              <small>Permite que otros vean tus seguidores y seguidos</small>
+            </span>
+            <span class="fb-switch-pill is-on" id="setting-follow-privacy-badge">Activa</span>
+          </button>
+
+          <button type="button" class="fb-settings-row" id="setting-toggle-right-rail">
+            <span class="fb-settings-meta">
+              <strong>Panel lateral de acuerdos</strong>
+              <small>Muestra u oculta la columna derecha en escritorio</small>
+            </span>
+            <span class="fb-switch-pill is-on" id="setting-right-rail-badge">Visible</span>
+          </button>
+
+          <hr class="fb-menu-divider" />
+
+          <button type="button" class="fb-settings-row" id="setting-clear-read-notifs">
+            <span class="fb-settings-meta">
+              <strong>Limpiar notificaciones leídas</strong>
+              <small>Elimina solo las notificaciones ya marcadas como leídas</small>
+            </span>
+          </button>
+
+          <button type="button" class="fb-settings-row" id="setting-reset-feed">
+            <span class="fb-settings-meta">
+              <strong>Restablecer vista del muro</strong>
+              <small>Limpia el filtro de búsqueda y vuelve a Relatos</small>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <button type="button" class="btn-secondary" id="logout-btn">Salir</button>
+    </div>
+  </header>
+
+  <!-- Barra compacta secundaria (mantenida para compatibilidad de scripts/estilos) -->
+  <div id="compact-scroll-bar" class="compact-scroll-bar" aria-hidden="true">
+    <span id="compact-section-label">📖 Muro de Relatos</span>
+    <span id="compact-role-badge"></span>
+  </div>
+
+  <!-- Layout principal de 3 columnas -->
+  <div class="fb-shell">
+    <!-- Columna izquierda -->
+    <aside class="fb-sidebar-left" aria-label="Accesos rápidos">
+      <a href="perfil.html" class="fb-left-user-row">
+        <span class="fb-mini-rail-avatar" id="left-rail-avatar">U</span>
+        <span id="left-rail-name">Mi perfil</span>
+      </a>
+
+      <button type="button" class="fb-rail-btn is-active" data-rail-tab="stories-view">
+        <span>📖</span>
+        <span>Muro de relatos</span>
+      </button>
+
+      <button
+        type="button"
+        class="fb-rail-btn is-hidden"
+        id="rail-creators-btn"
+        data-rail-tab="creators-view"
+      >
+        <span>🎬</span>
+        <span>Espacio de creadores</span>
+      </button>
+
+      <button type="button" class="fb-rail-btn" id="rail-agreements-chat-btn">
+        <span>💬</span>
+        <span>Chats de acuerdos</span>
+      </button>
+
+      <a href="editar-perfil.html" class="fb-rail-btn">
+        <span>✏️</span>
+        <span>Editar perfil</span>
+      </a>
+
+      <div class="fb-rail-footer">
+        Umbral · Relatos reales y acuerdos claros entre autores y creadores.
+      </div>
+    </aside>
+
+    <!-- Columna central -->
+    <main class="fb-feed-center">
+      <!-- Caja rápida superior compartida -->
+      <div class="fb-quick-box" id="creator-composer-box">
+        <div class="fb-quick-top">
+          <span class="fb-mini-rail-avatar" id="quick-composer-avatar">U</span>
+          <button
+            type="button"
+            class="fb-create-story-btn"
+            id="toggle-composer"
+            aria-expanded="false"
+            aria-controls="composer-drawer"
+          >
+            <span>✍️ Crear relato y opciones</span>
+          </button>
+          <button
+            type="button"
+            class="fb-create-story-btn is-hidden"
+            id="toggle-creator-composer"
+            aria-expanded="false"
+            aria-controls="creator-drawer"
+          >
+            <span>🎬 Publicar novedad o video</span>
+          </button>
+        </div>
+
+        <div id="composer-drawer" class="composer-drawer" aria-hidden="true">
+          <form id="story-form">
+            <p class="fb-explicit-warning">
+              ⚠️ Comparte experiencias reales o anécdotas genuinas de forma responsable.
+            </p>
+
+            <label class="field-label" for="title">Título del relato</label>
+            <input
+              type="text"
+              id="title"
+              placeholder="Ej. Pasos en el pasillo a las 3:00 AM"
+              required
+            />
+
+            <label class="field-label" for="author">Tu apodo o nombre de autor</label>
+            <input
+              type="text"
+              id="author"
+              placeholder="Tu apodo"
+              required
+            />
+
+            <label class="field-label" for="category">Categoría</label>
+            <div class="select-wrapper">
+              <select id="category">
+                <option value="Casa / Habitación">Casa / Habitación</option>
+                <option value="Carretera / Viaje">Carretera / Viaje</option>
+                <option value="Trabajo / Turno nocturno">Trabajo / Turno nocturno</option>
+                <option value="Infancia / Recuerdo">Infancia / Recuerdo</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+
+            <label class="field-label" for="content">Relato</label>
+            <textarea
+              id="content"
+              rows="4"
+              placeholder="Escribe tu experiencia con calma y detalle..."
+              required
+            ></textarea>
+
+            <div class="fb-media-inputs-grid">
+              <div>
+                <label class="field-label" for="story-image-file">Imagen adjunta (opcional)</label>
+                <input type="file" id="story-image-file" accept="image/*" />
+              </div>
+              <div>
+                <label class="field-label" for="story-video-file">Video adjunto (opcional)</label>
+                <input type="file" id="story-video-file" accept="video/*" />
+              </div>
+            </div>
+
+            <div id="story-media-preview" class="fb-media-preview-box"></div>
+
+            <label class="checkbox-row" for="allow-creators">
+              <input type="checkbox" id="allow-creators" checked />
+              <span>Permitir que creadores de contenido soliciten relatar esta historia</span>
+            </label>
+
+            <button type="submit" class="btn-primary" id="publish-btn">
+              <span>✨ Publicar relato</span>
+            </button>
+          </form>
+        </div>
+
+        <div id="creator-drawer" class="composer-drawer" aria-hidden="true">
+          <form id="creator-post-form">
+            <label class="field-label" for="creator-channel">Nombre del canal o creador</label>
+            <input
+              type="text"
+              id="creator-channel"
+              placeholder="Nombre de tu canal"
+              required
+            />
+
+            <label class="field-label" for="creator-network">Plataforma / Red principal</label>
+            <input
+              type="text"
+              id="creator-network"
+              placeholder="Ej. YouTube, TikTok, Spotify o Podcast"
+              required
+            />
+
+            <label class="field-label" for="creator-post-type">Tipo de publicación</label>
+            <div class="select-wrapper">
+              <select id="creator-post-type">
+                <option value="Próximo video / Estreno">Próximo video / Estreno</option>
+                <option value="Búsqueda de relatos">Búsqueda de relatos</option>
+                <option value="Novedad de canal">Novedad de canal</option>
+                <option value="Dinámica con comunidad">Dinámica con comunidad</option>
+              </select>
+            </div>
+
+            <label class="field-label" for="creator-message">Mensaje, noticia o próximo contenido</label>
+            <textarea
+              id="creator-message"
+              rows="3"
+              placeholder="Comparte noticias de tus próximos videos, adelantos, novedades o qué relatos buscas..."
+              required
+            ></textarea>
+
+            <button type="submit" class="btn-primary" id="publish-creator-btn">
+              <span>📢 Publicar en espacio de creadores</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Vista 1: Muro de relatos -->
+      <section id="stories-view" class="tab-panel is-active" aria-label="Muro de relatos">
+        <div class="fb-section-heading">
+          <h2>Relatos recientes</h2>
+        </div>
+
+        <div id="stories-list"></div>
+      </section>
+
+      <!-- Vista 2: Espacio de creadores -->
+      <section id="creators-view" class="tab-panel" aria-label="Espacio de creadores">
+        <div class="fb-section-heading">
+          <h2>Anuncios de creadores</h2>
+        </div>
+
+        <div id="creator-posts-list"></div>
+      </section>
+    </main>
+
+    <!-- Columna derecha: Acuerdos y chat -->
+    <aside class="fb-sidebar-right" aria-label="Acuerdos y chat">
+      <div class="fb-right-card">
+        <div class="notif-header" style="margin-bottom: 0.35rem;">
+          <h3>💬 Acuerdos activos</h3>
+          <span class="notif-count is-hidden" id="chat-hub-badge">0</span>
+        </div>
+        <p class="fb-right-muted">
+          Coordina la narración o adaptación de relatos una vez aceptada la solicitud.
+        </p>
+
+        <div id="agreed-chats-sidebar-list" class="fb-agreed-list"></div>
+
+        <button
+          type="button"
+          class="btn-secondary"
+          id="open-agreements-chat-btn"
+          style="margin-top: 0.75rem;"
+        >
+          Abrir primer acuerdo
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modal: Solicitar permiso para relatar -->
+  <div class="modal-backdrop" id="permission-modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="permission-modal-title">
+      <div class="modal-header">
+        <h3 id="permission-modal-title">Solicitar permiso para relatar</h3>
+        <button type="button" class="icon-close" id="close-modal-btn" aria-label="Cerrar">✕</button>
+      </div>
+
+      <p class="modal-preview" id="modal-story-preview"></p>
+
+      <form id="permission-form" class="modal-form">
+        <label class="field-label" for="creator-name">Tu nombre de creador</label>
+        <input type="text" id="creator-name" required />
+
+        <label class="field-label" for="creator-platform">Canal o plataforma donde publicarás</label>
+        <input
+          type="text"
+          id="creator-platform"
+          placeholder="Ej. YouTube / TikTok / Podcast"
+          required
+        />
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancel-modal-btn">Cancelar</button>
+          <button type="submit" class="btn-primary">
+            <span>Enviar solicitud</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Chat de acuerdo aceptado -->
+  <div class="modal-backdrop" id="chat-modal" aria-hidden="true">
+    <div
+      class="modal-card chat-modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="chat-modal-title"
+    >
+      <div class="modal-header">
+        <h3 id="chat-modal-title">Chat del acuerdo</h3>
+        <button type="button" class="icon-close" id="close-chat-btn" aria-label="Cerrar chat">✕</button>
+      </div>
+
+      <p class="modal-subtitle chat-context-subtitle" id="chat-context-subtitle"></p>
+
+      <div id="chat-messages" class="chat-messages"></div>
+
+      <form id="chat-form" class="chat-form">
+        <input
+          type="text"
+          id="chat-input"
+          placeholder="Escribe un mensaje para coordinar..."
+          autocomplete="off"
+          required
+        />
+        <button type="submit" class="btn-primary chat-send-btn">
+          <span>Enviar</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
