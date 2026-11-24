@@ -23,6 +23,46 @@ const isDataImage = (v) => typeof v === "string" && v.startsWith("data:image");
 const isDataVideo = (v) => typeof v === "string" && v.startsWith("data:video");
 const byId = (id) => document.getElementById(id);
 
+function iconEl(name, extraClass = "") {
+  if (typeof window.createUmbralIcon === "function") {
+    return window.createUmbralIcon(name, extraClass);
+  }
+  const span = document.createElement("span");
+  span.className = `umbral-icon ${extraClass}`.trim();
+  span.innerHTML = window.UMBRAL_ICONS?.[name] || window.UMBRAL_ICONS?.flame || "";
+  return span;
+}
+
+function iconHtml(name, extraClass = "") {
+  if (typeof window.umbralIconHtml === "function") {
+    return window.umbralIconHtml(name, extraClass);
+  }
+  const markup = window.UMBRAL_ICONS?.[name] || window.UMBRAL_ICONS?.flame || "";
+  return `<span class="umbral-icon ${extraClass}">${markup}</span>`;
+}
+
+function setButtonContent(btn, iconName, text, iconClass = "umbral-icon--sm") {
+  if (!btn) return;
+  btn.innerHTML = "";
+  if (iconName) btn.appendChild(iconEl(iconName, iconClass));
+  const label = document.createElement("span");
+  label.textContent = text;
+  btn.appendChild(label);
+}
+
+function navigateWithTransition(url, message = "Abriendo el umbral...") {
+  if (!url) return;
+  if (url.toLowerCase().includes("login.html") && window.umbralTransition?.exitToLogin) {
+    window.umbralTransition.exitToLogin(url);
+    return;
+  }
+  if (window.umbralTransition?.go) {
+    window.umbralTransition.go(url, message);
+    return;
+  }
+  window.location.href = url;
+}
+
 function loadData(key, fallback = []) {
   try {
     const raw = localStorage.getItem(key);
@@ -162,6 +202,132 @@ function showFormError(el, msg) {
 
 function hideFormError(el) {
   if (el) el.style.display = "none";
+}
+
+// --- INTERACCIONES SOCIALES (LIKES, COMPARTIDOS ÚNICOS POR USUARIO Y COMENTARIOS PÚBLICOS) ---
+function getPostStorageKey(kind) {
+  return kind === "creator" ? STORAGE_KEYS.creatorPosts : STORAGE_KEYS.stories;
+}
+
+function findPostRecord(kind, postId) {
+  const key = getPostStorageKey(kind);
+  const items = loadData(key, []);
+  const idx = items.findIndex((item) => item.id === postId);
+  if (idx < 0) return { key, items, idx: -1, post: null };
+
+  const post = items[idx];
+  if (!Array.isArray(post.likes)) post.likes = [];
+  if (!Array.isArray(post.sharedBy)) post.sharedBy = [];
+  post.sharedBy = Array.from(new Set(post.sharedBy));
+  if (!post.shareMeta || typeof post.shareMeta !== "object") post.shareMeta = {};
+  post.sharesCount = post.sharedBy.length;
+  if (!Array.isArray(post.comments)) post.comments = [];
+
+  return { key, items, idx, post };
+}
+
+function hasUserSharedPost(post, userId) {
+  if (!post || !userId || !Array.isArray(post.sharedBy)) return false;
+  return post.sharedBy.includes(userId);
+}
+
+function togglePostLike(kind, postId, userId) {
+  if (!userId) return null;
+  const { key, items, post } = findPostRecord(kind, postId);
+  if (!post) return null;
+
+  const exists = post.likes.includes(userId);
+  if (exists) {
+    post.likes = post.likes.filter((id) => id !== userId);
+  } else {
+    post.likes.push(userId);
+  }
+  saveData(key, items);
+  return post;
+}
+
+/**
+ * Registra el compartido del usuario una sola vez en su perfil y el contador general.
+ * Si el usuario ya había compartido antes, no incrementa el contador ni duplica su ID,
+ * pero permite actualizar su nota o privacidad en `shareMeta`.
+ */
+function sharePostRecord(kind, postId, user, options = {}) {
+  if (!user?.id) return { post: null, alreadyShared: false, addedNow: false };
+  const { key, items, post } = findPostRecord(kind, postId);
+  if (!post) return { post: null, alreadyShared: false, addedNow: false };
+
+  const alreadyShared = post.sharedBy.includes(user.id);
+  let addedNow = false;
+
+  if (!alreadyShared) {
+    post.sharedBy.push(user.id);
+    addedNow = true;
+  }
+
+  post.sharesCount = post.sharedBy.length;
+  post.shareMeta[user.id] = {
+    note: String(options.note ?? post.shareMeta[user.id]?.note ?? "").trim(),
+    visibility: options.visibility || post.shareMeta[user.id]?.visibility || "Público",
+    sharedAt: post.shareMeta[user.id]?.sharedAt || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  };
+
+  saveData(key, items);
+  return { post, alreadyShared, addedNow };
+}
+
+function addPublicPostComment(kind, postId, user, { text = "", image = "", video = "" }) {
+  const cleanText = String(text || "").trim();
+  const hasImg = isDataImage(image);
+  const hasVid = isDataVideo(video);
+  if (!user?.id || (!cleanText && !hasImg && !hasVid)) return null;
+
+  const { key, items, post } = findPostRecord(kind, postId);
+  if (!post) return null;
+
+  const comment = {
+    id: crypto.randomUUID(),
+    authorId: user.id,
+    authorName: user.username,
+    authorAvatar: lookupAvatarForEntry({
+      authorId: user.id,
+      name: user.username,
+      fallbackAvatar: user.avatar || ""
+    }),
+    text: cleanText,
+    image: hasImg ? image : "",
+    video: hasVid ? video : "",
+    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  };
+
+  post.comments.push(comment);
+  if (!saveData(key, items) && hasVid) {
+    comment.video = "";
+    saveData(key, items);
+  }
+
+  return { post, comment };
+}
+
+function getUserLikedPosts(userId) {
+  if (!userId) return [];
+  const stories = loadData(STORAGE_KEYS.stories, [])
+    .filter((s) => Array.isArray(s.likes) && s.likes.includes(userId))
+    .map((s) => ({ ...s, _kind: "story" }));
+  const creatorPosts = loadData(STORAGE_KEYS.creatorPosts, [])
+    .filter((p) => Array.isArray(p.likes) && p.likes.includes(userId))
+    .map((p) => ({ ...p, _kind: "creator" }));
+  return [...stories, ...creatorPosts];
+}
+
+function getUserSharedPosts(userId) {
+  if (!userId) return [];
+  const stories = loadData(STORAGE_KEYS.stories, [])
+    .filter((s) => Array.isArray(s.sharedBy) && s.sharedBy.includes(userId))
+    .map((s) => ({ ...s, _kind: "story" }));
+  const creatorPosts = loadData(STORAGE_KEYS.creatorPosts, [])
+    .filter((p) => Array.isArray(p.sharedBy) && p.sharedBy.includes(userId))
+    .map((p) => ({ ...p, _kind: "creator" }));
+  return [...stories, ...creatorPosts];
 }
 
 // --- VISOR AMPLIADO ---
@@ -468,7 +634,7 @@ function buildAvatarElement(username, avatarUrl, sizeClass = "profile-avatar", o
       el.title = `Ver perfil de ${username}`;
       el.addEventListener("click", (e) => {
         e.stopPropagation();
-        window.location.href = options.profileHref;
+        navigateWithTransition(options.profileHref, `Abriendo perfil de ${username}...`);
       });
     }
   };
@@ -555,10 +721,76 @@ function toggleFollowRecord(targetKey, targetName, onFollowAdded = null) {
   saveData(STORAGE_KEYS.follows, follows);
 }
 
+function getAcceptedAgreementsForUser(user) {
+  if (!user) return [];
+  const agreements = [];
+  loadData(STORAGE_KEYS.stories, []).forEach((story) => {
+    (Array.isArray(story.requests) ? story.requests : []).forEach((req) => {
+      if (req.status === "Aceptada" && (story.authorId === user.id || req.creatorId === user.id)) {
+        agreements.push({
+          storyId: story.id,
+          requestId: req.id,
+          storyTitle: story.title,
+          peerId: story.authorId === user.id ? req.creatorId : story.authorId,
+          peerName: story.authorId === user.id ? req.creator : story.author,
+          messages: Array.isArray(req.messages) ? req.messages : [],
+          messagesCount: Array.isArray(req.messages) ? req.messages.length : 0
+        });
+      }
+    });
+  });
+  return agreements;
+}
+
+function appendAgreementMessage(storyId, requestId, senderUser, text) {
+  const cleanText = String(text || "").trim();
+  if (!cleanText || !senderUser) return null;
+
+  const stories = loadData(STORAGE_KEYS.stories, []);
+  const story = stories.find((s) => s.id === storyId);
+  const req = story?.requests?.find((r) => r.id === requestId);
+  if (!story || !req || req.status !== "Aceptada") return null;
+
+  const isParticipant = story.authorId === senderUser.id || req.creatorId === senderUser.id;
+  if (!isParticipant) return null;
+
+  const roleLabel = senderUser.role === "creador" ? "Creador" : "Autor";
+  if (!Array.isArray(req.messages)) req.messages = [];
+
+  const msgObj = {
+    id: crypto.randomUUID(),
+    senderId: senderUser.id,
+    senderName: senderUser.username,
+    senderRole: roleLabel,
+    text: cleanText,
+    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  };
+
+  req.messages.push(msgObj);
+  saveData(STORAGE_KEYS.stories, stories);
+
+  const recipientId = senderUser.id === story.authorId ? req.creatorId : story.authorId;
+  if (recipientId) {
+    const notifs = loadData(STORAGE_KEYS.notifs, []);
+    notifs.unshift({
+      id: crypto.randomUUID(),
+      recipientId,
+      text: `Nuevo mensaje en acuerdo de "${story.title}" (${roleLabel}):`,
+      preview: cleanText,
+      iconName: "chat",
+      read: false,
+      createdAt: msgObj.time
+    });
+    saveData(STORAGE_KEYS.notifs, notifs);
+  }
+
+  return { story, req, msgObj };
+}
+
 // --- LOGIN ---
 const loginPageForm = byId("login-page-form");
 if (loginPageForm) {
-  if (getCurrentUser()) window.location.href = "index.html";
+  if (getCurrentUser()) navigateWithTransition("index.html", "Entrando al muro...");
 
   loginPageForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -576,7 +808,7 @@ if (loginPageForm) {
     }
 
     saveData(STORAGE_KEYS.session, buildSessionPayload(user));
-    window.location.href = "index.html";
+    navigateWithTransition("index.html", "Entrando al muro...");
   });
 }
 
@@ -653,7 +885,7 @@ if (registerPageForm) {
     users.push(newUser);
     saveData(STORAGE_KEYS.users, users);
     saveData(STORAGE_KEYS.session, buildSessionPayload(newUser));
-    window.location.href = "index.html";
+    navigateWithTransition("index.html", "Entrando al muro...");
   });
 }
 
@@ -662,7 +894,7 @@ const editProfileForm = byId("edit-profile-form");
 if (editProfileForm) {
   const user = getCurrentUser();
   if (!user) {
-    window.location.href = "login.html";
+    navigateWithTransition("login.html");
   } else {
     const errorEl = byId("edit-error");
     const usernameInput = byId("edit-username");
@@ -722,7 +954,7 @@ if (editProfileForm) {
 
       syncUserAcrossStorage(updatedUser);
       updateUserReferencesInPosts(user.id, newUsername, newAvatar, newChannel);
-      window.location.href = "perfil.html";
+      navigateWithTransition("perfil.html", "Guardando perfil...");
     });
   }
 }
@@ -732,12 +964,12 @@ const profilePageRoot = byId("profile-page-root");
 if (profilePageRoot) {
   const currentUser = getCurrentUser();
   if (!currentUser) {
-    window.location.href = "login.html";
+    navigateWithTransition("login.html");
   } else {
     const lightbox = ensureMediaLightbox();
     byId("logout-btn")?.addEventListener("click", () => {
       localStorage.removeItem(STORAGE_KEYS.session);
-      window.location.href = "login.html";
+      navigateWithTransition("login.html");
     });
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -793,12 +1025,404 @@ if (profilePageRoot) {
 
     let activeListTab = null;
     let creatorSearchTerm = "";
+    let notifMode = "all";
+    let activeProfileChatContext = null;
+    let activeOpenCreatorTile = null;
+
     const container = byId("profile-card-container");
+
+    const chatBtn = byId("prf-chat-btn");
+    const chatPopover = byId("prf-chat-popover");
+    const chatListEl = byId("prf-chat-list");
+    const chatBadgeEl = byId("prf-chat-badge");
+
+    const bellBtn = byId("prf-bell-btn");
+    const notifPopover = byId("prf-notif-popover");
+    const notifBadgeEl = byId("prf-notif-badge");
+    const notifListEl = byId("prf-notifications-list");
+    const markReadBtn = byId("prf-mark-read-btn");
+    const filterAllBtn = byId("prf-notif-all");
+    const filterUnreadBtn = byId("prf-notif-unread");
+
+    const settingsBtn = byId("prf-settings-btn");
+    const settingsPopover = byId("prf-settings-popover");
+    const toggleFollowBtn = byId("prf-toggle-follow-list");
+    const followListPill = byId("prf-follow-list-pill");
+    const toggleCreatorsRailBtn = byId("prf-toggle-creators-rail");
+    const creatorsRailPill = byId("prf-creators-rail-pill");
+    const goEditBtn = byId("prf-go-edit-profile");
+    const clearReadBtn = byId("prf-clear-read-notifs");
+
+    const prfChatModal = byId("prf-chat-modal");
+    const prfChatTitle = byId("prf-chat-modal-title");
+    const prfChatSubtitle = byId("prf-chat-subtitle");
+    const prfChatMessages = byId("prf-chat-messages");
+    const prfChatForm = byId("prf-chat-form");
+    const prfChatInput = byId("prf-chat-input");
+    const prfCloseChatBtn = byId("prf-close-chat-btn");
+
+    const closeAllTopPopovers = () => {
+      chatPopover?.classList.remove("is-open");
+      notifPopover?.classList.remove("is-open");
+      settingsPopover?.classList.remove("is-open");
+      chatBtn?.setAttribute("aria-expanded", "false");
+      bellBtn?.setAttribute("aria-expanded", "false");
+      settingsBtn?.setAttribute("aria-expanded", "false");
+    };
+
+    const closeCreatorPopovers = (exceptTile = null) => {
+      profilePageRoot.querySelectorAll(".creator-avatar-tile.is-popover-open").forEach((tile) => {
+        if (tile !== exceptTile) {
+          clearTimeout(tile._closeTimer);
+          tile.classList.remove("is-popover-open");
+        }
+      });
+      if (!exceptTile) activeOpenCreatorTile = null;
+    };
+
+    const syncCreatorsRailVisibility = () => {
+      const prefs = loadData(STORAGE_KEYS.prefs, { showCreatorsRail: true });
+      const visible = prefs.showCreatorsRail !== false;
+      const hasBox = Boolean(profilePageRoot.querySelector(".narrator-creators-floating-box"));
+      document.body.classList.toggle("prf-hide-creators-rail", !visible);
+      profilePageRoot.classList.toggle("has-creators-rail", hasBox && visible);
+      if (creatorsRailPill) {
+        creatorsRailPill.textContent = visible ? "Visible" : "Oculto";
+      }
+    };
+
+    const syncFollowListPill = () => {
+      if (!followListPill) return;
+      const sessionNow = getCurrentUser() || currentUser;
+      const usersNow = loadData(STORAGE_KEYS.users, []);
+      const found = usersNow.find((u) => u.id === sessionNow.id) || sessionNow;
+      const isPublic =
+        typeof found.allowPublicFollowLists === "boolean" ? found.allowPublicFollowLists : true;
+      if (isOwnProfile) {
+        profileData.allowPublicFollowLists = isPublic;
+      }
+      followListPill.textContent = isPublic ? "Activa" : "Privada";
+    };
+
+    const renderProfileChatMessages = () => {
+      if (!prfChatMessages) return;
+      prfChatMessages.innerHTML = "";
+      if (!activeProfileChatContext) return;
+
+      const me = getCurrentUser();
+      const storiesNow = loadData(STORAGE_KEYS.stories, []);
+      const story = storiesNow.find((s) => s.id === activeProfileChatContext.storyId);
+      const req = story?.requests?.find((r) => r.id === activeProfileChatContext.requestId);
+      if (!story || !req || req.status !== "Aceptada") return;
+
+      const msgs = Array.isArray(req.messages) ? req.messages : [];
+      if (msgs.length === 0) {
+        const empty = document.createElement("p");
+        empty.style.cssText = "color:#9aa2b8;font-size:0.85rem;";
+        empty.textContent = "Acuerdo confirmado. Coordina aquí los detalles del relato.";
+        prfChatMessages.appendChild(empty);
+        return;
+      }
+
+      msgs.forEach((m) => {
+        const bubble = document.createElement("div");
+        bubble.className = `chat-bubble ${me && m.senderId === me.id ? "is-mine" : ""}`;
+
+        const sender = document.createElement("div");
+        sender.className = "chat-sender";
+        sender.textContent = `${m.senderName} (${m.senderRole}) · ${m.time}`;
+
+        const text = document.createElement("div");
+        text.textContent = m.text;
+
+        bubble.append(sender, text);
+        prfChatMessages.appendChild(bubble);
+      });
+      prfChatMessages.scrollTop = prfChatMessages.scrollHeight;
+    };
+
+    const openProfileChatModal = (storyId, requestId) => {
+      const me = getCurrentUser();
+      if (!me) return;
+      const storiesNow = loadData(STORAGE_KEYS.stories, []);
+      const story = storiesNow.find((s) => s.id === storyId);
+      const req = story?.requests?.find((r) => r.id === requestId);
+      if (!story || !req || req.status !== "Aceptada") return;
+      if (story.authorId !== me.id && req.creatorId !== me.id) return;
+
+      activeProfileChatContext = { storyId, requestId };
+      const peerName = story.authorId === me.id ? req.creator : story.author;
+      if (prfChatTitle) prfChatTitle.textContent = `Chat con ${peerName}`;
+      if (prfChatSubtitle) {
+        prfChatSubtitle.textContent = `Acuerdo aceptado · "${story.title}" · Autor: ${story.author} · Creador: ${req.creator}`;
+      }
+      prfChatForm?.reset();
+      renderProfileChatMessages();
+      prfChatModal?.classList.add("is-open");
+      prfChatModal?.setAttribute("aria-hidden", "false");
+      setTimeout(() => prfChatInput?.focus(), 100);
+    };
+
+    const closeProfileChatModal = () => {
+      activeProfileChatContext = null;
+      prfChatModal?.classList.remove("is-open");
+      prfChatModal?.setAttribute("aria-hidden", "true");
+    };
+
+    prfCloseChatBtn?.addEventListener("click", closeProfileChatModal);
+    prfChatModal?.addEventListener("click", (e) => {
+      if (e.target === prfChatModal) closeProfileChatModal();
+    });
+
+    prfChatForm?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const me = getCurrentUser();
+      if (!activeProfileChatContext || !me) return;
+      const result = appendAgreementMessage(
+        activeProfileChatContext.storyId,
+        activeProfileChatContext.requestId,
+        me,
+        prfChatInput?.value || ""
+      );
+      if (!result) return;
+      if (prfChatInput) prfChatInput.value = "";
+      renderProfileChatMessages();
+      renderProfileChatDropdown();
+      renderProfileNotifications();
+    });
+
+    const renderProfileChatDropdown = () => {
+      if (!chatListEl) return;
+      const me = getCurrentUser();
+      const agreements = getAcceptedAgreementsForUser(me);
+
+      if (chatBadgeEl) {
+        chatBadgeEl.textContent = String(agreements.length);
+        chatBadgeEl.classList.toggle("is-hidden", agreements.length === 0);
+      }
+
+      chatListEl.innerHTML = "";
+      if (agreements.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "prf-chat-empty";
+        empty.textContent =
+          me?.role === "creador"
+            ? "Aún no tienes acuerdos aceptados con narradores."
+            : "Aún no tienes acuerdos aceptados con creadores.";
+        chatListEl.appendChild(empty);
+        return;
+      }
+
+      agreements.forEach((item) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "prf-chat-item";
+
+        const main = document.createElement("div");
+        main.className = "prf-chat-item-main";
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "prf-chat-item-name";
+        nameSpan.textContent = item.peerName;
+
+        const storySpan = document.createElement("span");
+        storySpan.className = "prf-chat-item-story";
+        storySpan.textContent = item.storyTitle;
+
+        main.append(nameSpan, storySpan);
+
+        const pill = document.createElement("span");
+        pill.className = "prf-pill";
+        pill.textContent = item.messagesCount > 0 ? `${item.messagesCount} msg` : "Abrir";
+
+        btn.append(main, pill);
+        btn.addEventListener("click", () => {
+          closeAllTopPopovers();
+          openProfileChatModal(item.storyId, item.requestId);
+        });
+
+        chatListEl.appendChild(btn);
+      });
+    };
+
+    const renderProfileNotifications = () => {
+      if (!notifListEl || !notifBadgeEl) return;
+      const me = getCurrentUser();
+      const mine = me ? loadData(STORAGE_KEYS.notifs, []).filter((n) => n.recipientId === me.id) : [];
+      const unread = mine.filter((n) => !n.read);
+
+      if (unread.length > 0) {
+        notifBadgeEl.textContent = String(unread.length);
+        notifBadgeEl.classList.remove("is-hidden");
+      } else {
+        notifBadgeEl.classList.add("is-hidden");
+      }
+
+      const visibleNotifs = notifMode === "unread" ? unread : mine;
+      notifListEl.innerHTML = "";
+
+      if (visibleNotifs.length === 0) {
+        const p = document.createElement("p");
+        p.style.cssText = "color:#9aa2b8;font-size:0.85rem;margin:0;";
+        p.textContent =
+          notifMode === "unread"
+            ? "No tienes notificaciones sin leer."
+            : "No tienes notificaciones todavía.";
+        notifListEl.appendChild(p);
+        return;
+      }
+
+      visibleNotifs.forEach((n) => {
+        const item = document.createElement("div");
+        item.className = `notif-item ${n.read ? "" : "is-unread"}`;
+        item.textContent = n.text;
+        if (n.preview) {
+          const quote = document.createElement("div");
+          quote.className = "notif-quote";
+          quote.textContent = `“${n.preview}”`;
+          item.appendChild(quote);
+        }
+        const time = document.createElement("span");
+        time.className = "notif-time";
+        time.textContent = `${n.createdAt || ""} · ${n.read ? "Leída" : "Nueva"}`;
+        item.appendChild(time);
+        notifListEl.appendChild(item);
+      });
+    };
+
+    chatBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = !chatPopover?.classList.contains("is-open");
+      closeAllTopPopovers();
+      if (willOpen) {
+        renderProfileChatDropdown();
+        chatPopover?.classList.add("is-open");
+        chatBtn.setAttribute("aria-expanded", "true");
+      }
+    });
+
+    bellBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = !notifPopover?.classList.contains("is-open");
+      closeAllTopPopovers();
+      if (willOpen) {
+        renderProfileNotifications();
+        notifPopover?.classList.add("is-open");
+        bellBtn.setAttribute("aria-expanded", "true");
+      }
+    });
+
+    settingsBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = !settingsPopover?.classList.contains("is-open");
+      closeAllTopPopovers();
+      if (willOpen) {
+        syncFollowListPill();
+        syncCreatorsRailVisibility();
+        settingsPopover?.classList.add("is-open");
+        settingsBtn.setAttribute("aria-expanded", "true");
+      }
+    });
+
+    filterAllBtn?.addEventListener("click", () => {
+      notifMode = "all";
+      filterAllBtn.classList.add("is-active");
+      filterUnreadBtn?.classList.remove("is-active");
+      renderProfileNotifications();
+    });
+
+    filterUnreadBtn?.addEventListener("click", () => {
+      notifMode = "unread";
+      filterUnreadBtn.classList.add("is-active");
+      filterAllBtn?.classList.remove("is-active");
+      renderProfileNotifications();
+    });
+
+    markReadBtn?.addEventListener("click", () => {
+      const me = getCurrentUser();
+      if (!me) return;
+      saveData(
+        STORAGE_KEYS.notifs,
+        loadData(STORAGE_KEYS.notifs, []).map((n) =>
+          n.recipientId === me.id ? { ...n, read: true } : n
+        )
+      );
+      renderProfileNotifications();
+    });
+
+    clearReadBtn?.addEventListener("click", () => {
+      const me = getCurrentUser();
+      if (!me) return;
+      saveData(
+        STORAGE_KEYS.notifs,
+        loadData(STORAGE_KEYS.notifs, []).filter((n) => !(n.recipientId === me.id && n.read))
+      );
+      renderProfileNotifications();
+    });
+
+    toggleFollowBtn?.addEventListener("click", () => {
+      const me = getCurrentUser();
+      if (!me) return;
+      const usersNow = loadData(STORAGE_KEYS.users, []);
+      const idx = usersNow.findIndex((u) => u.id === me.id);
+      const currentVal =
+        idx >= 0 && typeof usersNow[idx].allowPublicFollowLists === "boolean"
+          ? usersNow[idx].allowPublicFollowLists
+          : typeof me.allowPublicFollowLists === "boolean"
+            ? me.allowPublicFollowLists
+            : true;
+      const nextVal = !currentVal;
+
+      const updatedSession = { ...me, allowPublicFollowLists: nextVal };
+      syncUserAcrossStorage(updatedSession);
+      if (isOwnProfile) {
+        profileData.allowPublicFollowLists = nextVal;
+      }
+      syncFollowListPill();
+      renderProfileView();
+    });
+
+    toggleCreatorsRailBtn?.addEventListener("click", () => {
+      const prefs = loadData(STORAGE_KEYS.prefs, { showCreatorsRail: true });
+      const nextVisible = !(prefs.showCreatorsRail !== false);
+      saveData(STORAGE_KEYS.prefs, { ...prefs, showCreatorsRail: nextVisible });
+      syncCreatorsRailVisibility();
+      renderProfileView();
+    });
+
+    goEditBtn?.addEventListener("click", () => {
+      navigateWithTransition("editar-perfil.html", "Abriendo editor de perfil...");
+    });
+
+    document.addEventListener("click", (e) => {
+      const insideTop =
+        chatPopover?.contains(e.target) ||
+        chatBtn?.contains(e.target) ||
+        notifPopover?.contains(e.target) ||
+        bellBtn?.contains(e.target) ||
+        settingsPopover?.contains(e.target) ||
+        settingsBtn?.contains(e.target);
+      if (!insideTop) closeAllTopPopovers();
+
+      if (!e.target.closest?.(".creator-avatar-tile")) {
+        closeCreatorPopovers();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeAllTopPopovers();
+        closeCreatorPopovers();
+        if (prfChatModal?.classList.contains("is-open")) closeProfileChatModal();
+      }
+    });
 
     const collectAvailableCreators = () => {
       const map = new Map();
+      const latestUsers = loadData(STORAGE_KEYS.users, []);
+      const latestPosts = loadData(STORAGE_KEYS.creatorPosts, []);
 
-      users.forEach((u) => {
+      latestUsers.forEach((u) => {
         if (u.role === "creador") {
           map.set(u.id, {
             id: u.id,
@@ -812,7 +1436,7 @@ if (profilePageRoot) {
         }
       });
 
-      allPosts.forEach((p) => {
+      latestPosts.forEach((p) => {
         const key = p.authorId || `author:${(p.channel || "").toLowerCase()}`;
         if (!key) return;
         const existing = map.get(key);
@@ -862,8 +1486,33 @@ if (profilePageRoot) {
       tile.className = `creator-avatar-tile ${isFavoriteSlot ? "is-fav" : ""}`;
       tile.tabIndex = 0;
 
+      const openThisPopover = () => {
+        clearTimeout(tile._closeTimer);
+        closeCreatorPopovers(tile);
+        activeOpenCreatorTile = tile;
+        tile.classList.add("is-popover-open");
+      };
+
+      const scheduleClosePopover = (delayMs = 260) => {
+        clearTimeout(tile._closeTimer);
+        tile._closeTimer = setTimeout(() => {
+          if (tile.contains(document.activeElement)) return;
+          tile.classList.remove("is-popover-open");
+          if (activeOpenCreatorTile === tile) activeOpenCreatorTile = null;
+        }, delayMs);
+      };
+
       const avatarEl = buildAvatarElement(creator.username, creator.avatar, "creator-tile-avatar", {
-        profileHref: getProfileUrlForTarget(creator.id, creator.username)
+        onClick: () => {
+          if (tile.classList.contains("is-popover-open")) {
+            navigateWithTransition(
+              getProfileUrlForTarget(creator.id, creator.username),
+              `Abriendo perfil de ${creator.username}...`
+            );
+          } else {
+            openThisPopover();
+          }
+        }
       });
 
       const popover = document.createElement("div");
@@ -884,7 +1533,12 @@ if (profilePageRoot) {
       const followersCount = follows.filter((f) => f.targetKey === creator.id).length;
       const statsEl = document.createElement("div");
       statsEl.className = "creator-popover-stats";
-      statsEl.textContent = `👥 ${followersCount} ${followersCount === 1 ? "seguidor" : "seguidores"}`;
+      statsEl.append(
+        iconEl("users", "umbral-icon--sm"),
+        document.createTextNode(
+          ` ${followersCount} ${followersCount === 1 ? "seguidor" : "seguidores"}`
+        )
+      );
 
       const descEl = document.createElement("p");
       descEl.className = "creator-popover-desc";
@@ -899,17 +1553,26 @@ if (profilePageRoot) {
       profileLink.href = getProfileUrlForTarget(creator.id, creator.username);
       profileLink.className = "creator-popover-link";
       profileLink.textContent = "Ver perfil";
+      profileLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        navigateWithTransition(
+          getProfileUrlForTarget(creator.id, creator.username),
+          `Abriendo perfil de ${creator.username}...`
+        );
+      });
 
       actionsEl.appendChild(profileLink);
 
-      if (creator.id !== currentUser.id && !isUserBlocked(creator.id)) {
+      const meNow = getCurrentUser() || currentUser;
+      if (creator.id !== meNow.id && !isUserBlocked(creator.id)) {
         const iFollow = follows.some(
-          (f) => f.followerId === currentUser.id && f.targetKey === creator.id
+          (f) => f.followerId === meNow.id && f.targetKey === creator.id
         );
         const followBtn = document.createElement("button");
         followBtn.type = "button";
         followBtn.className = `btn-follow ${iFollow ? "is-following" : ""}`;
-        followBtn.textContent = iFollow ? "✓ Siguiendo" : "+ Seguir";
+        setButtonContent(followBtn, iFollow ? "check" : "star", iFollow ? "Siguiendo" : "Seguir");
         followBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           toggleFollowRecord(creator.id, creator.username);
@@ -920,6 +1583,13 @@ if (profilePageRoot) {
 
       popover.append(topLine, statsEl, descEl, actionsEl);
       tile.append(avatarEl, popover);
+
+      tile.addEventListener("pointerenter", openThisPopover);
+      tile.addEventListener("pointerleave", () => scheduleClosePopover(280));
+      tile.addEventListener("focusin", openThisPopover);
+      tile.addEventListener("focusout", () => scheduleClosePopover(220));
+      popover.addEventListener("pointerenter", () => clearTimeout(tile._closeTimer));
+
       return tile;
     };
 
@@ -950,7 +1620,7 @@ if (profilePageRoot) {
 
       const favTitleRow = document.createElement("div");
       favTitleRow.className = "narrator-box-header";
-      favTitleRow.innerHTML = `<span>⭐ Favoritos</span><small>${favoriteCreators.length}</small>`;
+      favTitleRow.innerHTML = `<span>${iconHtml("star", "umbral-icon--sm umbral-icon--accent")} Favoritos</span><small>${favoriteCreators.length}</small>`;
       box.appendChild(favTitleRow);
 
       const favGrid = document.createElement("div");
@@ -974,7 +1644,7 @@ if (profilePageRoot) {
 
         const discTitleRow = document.createElement("div");
         discTitleRow.className = "narrator-box-header";
-        discTitleRow.innerHTML = `<span>🎬 Creadores</span><small>${allCreators.length}</small>`;
+        discTitleRow.innerHTML = `<span>${iconHtml("film", "umbral-icon--sm")} Creadores</span><small>${allCreators.length}</small>`;
         box.appendChild(discTitleRow);
 
         const searchInput = document.createElement("input");
@@ -1013,15 +1683,90 @@ if (profilePageRoot) {
       return box;
     };
 
+    const buildSavedPostSection = (sectionTitle, iconName, items, emptyText, isSharedList = false) => {
+      const sec = document.createElement("div");
+      sec.className = "profile-wall-section";
+
+      const head = document.createElement("div");
+      head.className = "profile-wall-header";
+
+      const h3 = document.createElement("h3");
+      h3.style.cssText = "font-size:1.02rem;display:inline-flex;align-items:center;gap:0.35rem;margin:0;";
+      h3.append(iconEl(iconName, "umbral-icon--sm"), document.createTextNode(sectionTitle));
+
+      const countBadge = document.createElement("span");
+      countBadge.className = "badge";
+      countBadge.textContent = `${items.length}`;
+
+      head.append(h3, countBadge);
+      sec.appendChild(head);
+
+      if (items.length === 0) {
+        const empty = document.createElement("p");
+        empty.style.cssText = "color:#9aa2b8;font-size:0.88rem;";
+        empty.textContent = emptyText;
+        sec.appendChild(empty);
+        return sec;
+      }
+
+      items.forEach((entry) => {
+        const card = document.createElement("article");
+        card.className = "story-card";
+
+        const isCreatorPost = entry._kind === "creator";
+        const heading = document.createElement("h4");
+        heading.textContent = isCreatorPost
+          ? `${entry.type || "Publicación de creador"} · ${entry.channel || "Creador"}`
+          : entry.title || "Relato";
+
+        const meta = document.createElement("div");
+        meta.className = "story-meta";
+        meta.textContent = isCreatorPost
+          ? `Creador: ${entry.channel || "Creador"} · ${entry.network || ""}`
+          : `Por ${entry.author || "Narrador"} · ${entry.category || ""}`;
+
+        const body = document.createElement("p");
+        body.textContent = isCreatorPost ? entry.message || "" : entry.content || "";
+
+        card.append(heading, meta, body);
+
+        if (isSharedList && entry.shareMeta?.[profileData.id]?.note) {
+          const noteEl = document.createElement("p");
+          noteEl.style.cssText = "color:#c4b5fd;font-size:0.85rem;margin-top:0.4rem;";
+          noteEl.textContent = `Nota al compartir (${entry.shareMeta[profileData.id].visibility || "Público"}): “${entry.shareMeta[profileData.id].note}”`;
+          card.appendChild(noteEl);
+        }
+
+        const openBtn = document.createElement("button");
+        openBtn.type = "button";
+        openBtn.className = "btn-mini";
+        openBtn.style.marginTop = "0.5rem";
+        openBtn.textContent = "Ver en el muro";
+        openBtn.addEventListener("click", () => {
+          const tabParam = isCreatorPost ? "creators-view" : "stories-view";
+          navigateWithTransition(
+            `index.html?tab=${encodeURIComponent(tabParam)}&post=${encodeURIComponent(entry.id)}`,
+            "Abriendo publicación en el muro..."
+          );
+        });
+
+        card.appendChild(openBtn);
+        sec.appendChild(card);
+      });
+
+      return sec;
+    };
+
     const renderProfileView = () => {
       if (!container) return;
-      const focusedInput =
-        container.activeElement?.tagName === "INPUT" ? container.activeElement.tagName : null;
+      const activeEl = document.activeElement;
+      const wasSearchFocused = activeEl?.classList?.contains("narrator-box-search");
       const prevSearchVal = creatorSearchTerm;
 
       container.innerHTML = "";
       profilePageRoot.querySelector(".narrator-creators-floating-box")?.remove();
 
+      const meNow = getCurrentUser() || currentUser;
       const isCreator = profileData.role === "creador";
       const userStories = allStories.filter(
         (s) =>
@@ -1033,7 +1778,7 @@ if (profilePageRoot) {
       const followerRecords = follows.filter((f) => f.targetKey === profileData.id);
       const followingRecords = follows.filter((f) => f.followerId === profileData.id);
       const alreadyFollowing = follows.some(
-        (f) => f.followerId === currentUser.id && f.targetKey === profileData.id
+        (f) => f.followerId === meNow.id && f.targetKey === profileData.id
       );
       const blocked = isUserBlocked(profileData.id);
 
@@ -1053,8 +1798,8 @@ if (profilePageRoot) {
         const ph = document.createElement("div");
         ph.className = "profile-banner-placeholder";
         ph.textContent = isOwnProfile
-          ? "🖼️ Añade un banner desde Editar perfil"
-          : "🖼️ Sin banner de portada";
+          ? "Añade un banner desde Editar perfil"
+          : "Sin banner de portada";
         bannerBox.appendChild(ph);
       }
 
@@ -1088,11 +1833,15 @@ if (profilePageRoot) {
       handleBadge.textContent = `${profileData.handle} · ID: ${profileData.id.slice(0, 8)}`;
 
       const roleEl = document.createElement("span");
-      roleEl.style.color = "#9aa2b8";
-      roleEl.style.fontSize = "0.86rem";
-      roleEl.textContent = isCreator
-        ? `🎬 Creador${profileData.channel ? ` · ${profileData.channel}` : ""}`
-        : "✍️ Narrador";
+      roleEl.style.cssText = "color:#9aa2b8;font-size:0.86rem;display:inline-flex;align-items:center;gap:0.3rem;";
+      roleEl.append(
+        iconEl(isCreator ? "film" : "quill", "umbral-icon--sm"),
+        document.createTextNode(
+          isCreator
+            ? `Creador${profileData.channel ? ` · ${profileData.channel}` : ""}`
+            : "Narrador"
+        )
+      );
 
       handleRow.append(handleBadge, roleEl);
       infoWrap.append(nameEl, handleRow);
@@ -1103,7 +1852,7 @@ if (profilePageRoot) {
         const editLink = document.createElement("a");
         editLink.href = "editar-perfil.html";
         editLink.className = "edit-profile-link";
-        editLink.textContent = "✏️ Editar perfil";
+        editLink.innerHTML = `${iconHtml("edit", "umbral-icon--sm")} <span>Editar perfil</span>`;
         header.appendChild(editLink);
       }
 
@@ -1115,9 +1864,13 @@ if (profilePageRoot) {
         followBtn.type = "button";
         followBtn.className = `btn-follow ${alreadyFollowing ? "is-following" : ""}`;
         followBtn.disabled = blocked;
-        followBtn.textContent = blocked
-          ? `Usuario bloqueado · ${followerRecords.length}`
-          : `${alreadyFollowing ? "✓ Siguiendo" : "+ Seguir"} · ${followerRecords.length}`;
+        setButtonContent(
+          followBtn,
+          blocked ? "ban" : alreadyFollowing ? "check" : "star",
+          blocked
+            ? `Usuario bloqueado · ${followerRecords.length}`
+            : `${alreadyFollowing ? "Siguiendo" : "Seguir"} · ${followerRecords.length}`
+        );
         followBtn.addEventListener("click", () => {
           if (blocked) return;
           toggleFollowRecord(profileData.id, profileData.username);
@@ -1127,7 +1880,11 @@ if (profilePageRoot) {
         const blockBtn = document.createElement("button");
         blockBtn.type = "button";
         blockBtn.className = `btn-block-user ${blocked ? "is-blocked" : ""}`;
-        blockBtn.textContent = blocked ? "🔓 Desbloquear usuario" : "🚫 Bloquear usuario";
+        setButtonContent(
+          blockBtn,
+          blocked ? "unlock" : "ban",
+          blocked ? "Desbloquear usuario" : "Bloquear usuario"
+        );
         blockBtn.addEventListener("click", () => {
           toggleBlockUser(profileData.id, profileData.username);
           renderProfileView();
@@ -1140,9 +1897,15 @@ if (profilePageRoot) {
       descBox.className = "profile-bio-text";
 
       const shortLine = document.createElement("div");
-      shortLine.textContent = profileData.shortDesc
-        ? `✨ Lo que le apasiona: ${profileData.shortDesc}`
-        : "✨ Sin descripción corta todavía.";
+      shortLine.style.cssText = "display:inline-flex;align-items:center;gap:0.35rem;";
+      shortLine.append(
+        iconEl("flame", "umbral-icon--sm umbral-icon--accent"),
+        document.createTextNode(
+          profileData.shortDesc
+            ? `Lo que le apasiona: ${profileData.shortDesc}`
+            : "Sin descripción corta todavía."
+        )
+      );
       descBox.appendChild(shortLine);
 
       if (isCreator && profileData.bio) {
@@ -1157,12 +1920,12 @@ if (profilePageRoot) {
 
       const storiesBox = document.createElement("div");
       storiesBox.className = "stat-box";
-      storiesBox.innerHTML = `<div class="stat-number">${userStories.length}</div><div class="stat-label">📖 Relatos</div>`;
+      storiesBox.innerHTML = `<div class="stat-number">${userStories.length}</div><div class="stat-label">${iconHtml("scroll", "umbral-icon--sm")} Relatos</div>`;
 
-      const makeStatTab = (tabName, count, label, title) => {
+      const makeStatTab = (tabName, count, iconName, label, title) => {
         const box = document.createElement("div");
         box.className = `stat-box stat-box-interactive ${activeListTab === tabName ? "is-selected" : ""}`;
-        box.innerHTML = `<div class="stat-number">${count}</div><div class="stat-label">${label}</div>`;
+        box.innerHTML = `<div class="stat-number">${count}</div><div class="stat-label">${iconHtml(iconName, "umbral-icon--sm")} ${label}</div>`;
         box.title = title;
         box.addEventListener("click", () => {
           activeListTab = activeListTab === tabName ? null : tabName;
@@ -1176,13 +1939,15 @@ if (profilePageRoot) {
         makeStatTab(
           "followers",
           followerRecords.length,
-          "👥 Seguidores",
+          "users",
+          "Seguidores",
           "Ver quiénes siguen este perfil"
         ),
         makeStatTab(
           "following",
           followingRecords.length,
-          "⭐ Siguiendo",
+          "star",
+          "Siguiendo",
           "Ver a quiénes sigue este perfil"
         )
       );
@@ -1191,15 +1956,20 @@ if (profilePageRoot) {
       followDrawer.className = `follow-drawer-panel ${activeListTab ? "is-open" : ""}`;
 
       if (activeListTab) {
-        const canViewList = isOwnProfile || profileData.allowPublicFollowLists !== false;
+        const canViewList = profileData.allowPublicFollowLists !== false;
         const drawerHeader = document.createElement("div");
         drawerHeader.className = "follow-drawer-header";
 
         const drawerTitle = document.createElement("h4");
-        drawerTitle.textContent =
-          activeListTab === "followers"
-            ? `👥 Seguidores de ${profileData.username} (${followerRecords.length})`
-            : `⭐ Perfiles que sigue ${profileData.username} (${followingRecords.length})`;
+        drawerTitle.style.cssText = "display:inline-flex;align-items:center;gap:0.35rem;margin:0;";
+        drawerTitle.append(
+          iconEl(activeListTab === "followers" ? "users" : "star", "umbral-icon--sm"),
+          document.createTextNode(
+            activeListTab === "followers"
+              ? `Seguidores de ${profileData.username} (${followerRecords.length})`
+              : `Perfiles que sigue ${profileData.username} (${followingRecords.length})`
+          )
+        );
 
         const closeDrawerBtn = document.createElement("button");
         closeDrawerBtn.type = "button";
@@ -1213,65 +1983,94 @@ if (profilePageRoot) {
         drawerHeader.append(drawerTitle, closeDrawerBtn);
         followDrawer.appendChild(drawerHeader);
 
-        if (!canViewList) {
-          const privNote = document.createElement("p");
-          privNote.style.cssText = "color:#9aa2b8;font-size:0.86rem;margin:0;";
-          privNote.textContent = "Este usuario mantiene oculta esta lista por privacidad.";
-          followDrawer.appendChild(privNote);
-        } else {
-          const listItemsWrap = document.createElement("div");
-          listItemsWrap.className = "follow-list-items";
-          const currentFollows = loadData(STORAGE_KEYS.follows, []);
+        const listTypeLabel = activeListTab === "followers" ? "seguidores" : "seguidos";
+        const subjectLabel =
+          profileData.role === "creador"
+            ? `Este creador ocultó su lista de ${listTypeLabel}`
+            : `El usuario ocultó su lista de ${listTypeLabel}`;
 
-          if (activeListTab === "followers") {
-            if (followerRecords.length === 0) {
-              const emptyF = document.createElement("p");
-              emptyF.style.cssText = "color:#9aa2b8;font-size:0.86rem;margin:0;";
-              emptyF.textContent = "Aún no tiene seguidores.";
-              listItemsWrap.appendChild(emptyF);
-            } else {
-              followerRecords.forEach((rec) => {
-                const member = resolveUserInfo(rec.followerId, rec.followerName || "");
-                let actionBtn = null;
-                if (member.id !== currentUser.id && !isUserBlocked(member.id)) {
-                  const iFollowBack = currentFollows.some(
-                    (f) => f.followerId === currentUser.id && f.targetKey === member.id
-                  );
-                  actionBtn = document.createElement("button");
-                  actionBtn.type = "button";
-                  actionBtn.className = `btn-follow ${iFollowBack ? "is-following" : ""}`;
-                  actionBtn.textContent = iFollowBack ? "✓ Siguiendo" : "+ Seguir";
-                  actionBtn.addEventListener("click", () => {
-                    toggleFollowRecord(member.id, member.username);
-                    renderProfileView();
-                  });
-                }
-                listItemsWrap.appendChild(buildMemberRow(member, actionBtn));
-              });
-            }
-          } else if (followingRecords.length === 0) {
-            const emptyIng = document.createElement("p");
-            emptyIng.style.cssText = "color:#9aa2b8;font-size:0.86rem;margin:0;";
-            emptyIng.textContent = "Aún no sigue a nadie.";
-            listItemsWrap.appendChild(emptyIng);
+        const listItemsWrap = document.createElement("div");
+        listItemsWrap.className = "follow-list-items";
+        const currentFollows = loadData(STORAGE_KEYS.follows, []);
+
+        if (activeListTab === "followers") {
+          if (followerRecords.length === 0) {
+            const emptyF = document.createElement("p");
+            emptyF.style.cssText = "color:#9aa2b8;font-size:0.86rem;margin:0;";
+            emptyF.textContent = "Aún no tiene seguidores.";
+            listItemsWrap.appendChild(emptyF);
           } else {
-            followingRecords.forEach((rec) => {
-              const member = resolveUserInfo(rec.targetKey, rec.targetName || "");
-              let unfollowBtn = null;
-              if (isOwnProfile) {
-                unfollowBtn = document.createElement("button");
-                unfollowBtn.type = "button";
-                unfollowBtn.className = "btn-mini btn-reject";
-                unfollowBtn.textContent = "Dejar de seguir";
-                unfollowBtn.addEventListener("click", () => {
-                  toggleFollowRecord(rec.targetKey, rec.targetName || "");
+            followerRecords.forEach((rec) => {
+              const member = resolveUserInfo(rec.followerId, rec.followerName || "");
+              let actionBtn = null;
+              if (member.id !== meNow.id && !isUserBlocked(member.id)) {
+                const iFollowBack = currentFollows.some(
+                  (f) => f.followerId === meNow.id && f.targetKey === member.id
+                );
+                actionBtn = document.createElement("button");
+                actionBtn.type = "button";
+                actionBtn.className = `btn-follow ${iFollowBack ? "is-following" : ""}`;
+                setButtonContent(
+                  actionBtn,
+                  iFollowBack ? "check" : "star",
+                  iFollowBack ? "Siguiendo" : "Seguir"
+                );
+                actionBtn.addEventListener("click", () => {
+                  toggleFollowRecord(member.id, member.username);
                   renderProfileView();
                 });
               }
-              listItemsWrap.appendChild(buildMemberRow(member, unfollowBtn));
+              listItemsWrap.appendChild(buildMemberRow(member, actionBtn));
             });
           }
+        } else if (followingRecords.length === 0) {
+          const emptyIng = document.createElement("p");
+          emptyIng.style.cssText = "color:#9aa2b8;font-size:0.86rem;margin:0;";
+          emptyIng.textContent = "Aún no sigue a nadie.";
+          listItemsWrap.appendChild(emptyIng);
+        } else {
+          followingRecords.forEach((rec) => {
+            const member = resolveUserInfo(rec.targetKey, rec.targetName || "");
+            let unfollowBtn = null;
+            if (isOwnProfile) {
+              unfollowBtn = document.createElement("button");
+              unfollowBtn.type = "button";
+              unfollowBtn.className = "btn-mini btn-reject";
+              unfollowBtn.textContent = "Dejar de seguir";
+              unfollowBtn.addEventListener("click", () => {
+                toggleFollowRecord(rec.targetKey, rec.targetName || "");
+                renderProfileView();
+              });
+            }
+            listItemsWrap.appendChild(buildMemberRow(member, unfollowBtn));
+          });
+        }
 
+        if (!canViewList) {
+          const privateStage = document.createElement("div");
+          privateStage.className = "follow-private-stage";
+
+          const blurredLayer = document.createElement("div");
+          blurredLayer.className = "follow-private-blur-content";
+          blurredLayer.appendChild(listItemsWrap);
+
+          const overlay = document.createElement("div");
+          overlay.className = "follow-private-overlay";
+
+          const lockBadge = document.createElement("div");
+          lockBadge.className = "follow-private-lock";
+          lockBadge.appendChild(iconEl("lock", "umbral-icon--sm"));
+
+          const titleText = document.createElement("strong");
+          titleText.textContent = subjectLabel;
+
+          const subText = document.createElement("span");
+          subText.textContent = "Contenido protegido por privacidad";
+
+          overlay.append(lockBadge, titleText, subText);
+          privateStage.append(blurredLayer, overlay);
+          followDrawer.appendChild(privateStage);
+        } else {
           followDrawer.appendChild(listItemsWrap);
         }
       }
@@ -1283,10 +2082,13 @@ if (profilePageRoot) {
       wallHeader.className = "profile-wall-header";
 
       const wallTitle = document.createElement("h3");
-      wallTitle.textContent = isOwnProfile
-        ? "📖 Mi muro de relatos"
-        : `📖 Muro de relatos de ${profileData.username}`;
-      wallTitle.style.fontSize = "1.02rem";
+      wallTitle.style.cssText = "font-size:1.02rem;display:inline-flex;align-items:center;gap:0.35rem;margin:0;";
+      wallTitle.append(
+        iconEl("scroll", "umbral-icon--sm"),
+        document.createTextNode(
+          isOwnProfile ? "Mi muro de relatos" : `Muro de relatos de ${profileData.username}`
+        )
+      );
 
       const wallCount = document.createElement("span");
       wallCount.className = "badge";
@@ -1316,9 +2118,16 @@ if (profilePageRoot) {
 
           const metaEl = document.createElement("div");
           metaEl.className = "story-meta";
-          metaEl.textContent = `${story.category} · ${
-            story.allowCreators ? "🎙️ Abierto a creadores" : "🔒 Solo lectura"
-          }`;
+          metaEl.style.display = "inline-flex";
+          metaEl.style.alignItems = "center";
+          metaEl.style.gap = "0.3rem";
+          metaEl.append(
+            document.createTextNode(`${story.category} · `),
+            iconEl(story.allowCreators ? "mic" : "lock", "umbral-icon--sm"),
+            document.createTextNode(
+              story.allowCreators ? "Abierto a creadores" : "Solo lectura"
+            )
+          );
 
           const contentEl = document.createElement("p");
           contentEl.textContent = story.content;
@@ -1328,24 +2137,54 @@ if (profilePageRoot) {
         });
       }
 
+      const likedItems = blocked && !isOwnProfile ? [] : getUserLikedPosts(profileData.id);
+      const sharedItems = blocked && !isOwnProfile ? [] : getUserSharedPosts(profileData.id);
+
+      const likedSection = buildSavedPostSection(
+        isOwnProfile ? "Publicaciones que te gustan" : `Le gusta a ${profileData.username}`,
+        "star",
+        likedItems,
+        "Aún no hay publicaciones marcadas con me gusta.",
+        false
+      );
+
+      const sharedSection = buildSavedPostSection(
+        isOwnProfile ? "Publicaciones compartidas" : `Compartido por ${profileData.username}`,
+        "megaphone",
+        sharedItems,
+        "Aún no hay publicaciones compartidas.",
+        true
+      );
+
       const children = [bannerBox, header];
       if (actionsRow.children.length > 0) children.push(actionsRow);
       children.push(descBox);
       if (isCreator && profileData.socials) {
         const socialEl = document.createElement("div");
         socialEl.className = "profile-socials";
-        socialEl.textContent = `🌐 Redes: ${profileData.socials}`;
+        socialEl.style.display = "inline-flex";
+        socialEl.style.alignItems = "center";
+        socialEl.style.gap = "0.35rem";
+        socialEl.append(
+          iconEl("globe", "umbral-icon--sm"),
+          document.createTextNode(`Redes: ${profileData.socials}`)
+        );
         children.push(socialEl);
       }
-      children.push(stats, followDrawer, wallSection);
+      children.push(stats, followDrawer, wallSection, likedSection, sharedSection);
       container.append(...children);
 
       if (!isCreator) {
         profilePageRoot.appendChild(buildNarratorCreatorsWidget(follows));
       }
 
-      if (focusedInput === "INPUT" && prevSearchVal) {
-        const restored = profilePageRoot.querySelector('input[type="search"]');
+      syncFollowListPill();
+      syncCreatorsRailVisibility();
+      renderProfileChatDropdown();
+      renderProfileNotifications();
+
+      if (wasSearchFocused && prevSearchVal) {
+        const restored = profilePageRoot.querySelector(".narrator-box-search");
         if (restored) {
           restored.focus();
           restored.setSelectionRange(restored.value.length, restored.value.length);
@@ -1361,7 +2200,7 @@ if (profilePageRoot) {
 const storiesList = byId("stories-list");
 if (storiesList) {
   const initialSession = getCurrentUser();
-  if (!initialSession) window.location.href = "login.html";
+  if (!initialSession) navigateWithTransition("login.html");
 
   const compactSectionLabel = byId("compact-section-label");
   const compactRoleBadge = byId("compact-role-badge");
@@ -1445,10 +2284,37 @@ if (storiesList) {
   const chatInput = byId("chat-input");
   const closeChatBtn = byId("close-chat-btn");
 
+  // Modal de Compartir estilo Facebook
+  const sharePostModal = byId("share-post-modal");
+  const closeSharePostBtn = byId("close-share-post-btn");
+  const shareModalAvatar = byId("share-modal-avatar");
+  const shareModalUsername = byId("share-modal-username");
+  const sharePrivacySelect = byId("share-privacy-select");
+  const sharePostForm = byId("share-post-form");
+  const shareCommentInput = byId("share-comment-input");
+  const shareModalStatus = byId("share-modal-status");
+  const shareNowBtn = byId("share-now-btn");
+  const shareContactsRow = byId("share-contacts-row");
+  const shareTargetsGrid = byId("share-targets-grid");
+
+  // Modal de detalle de publicación (likes, compartidos y comentarios públicos con clip)
+  const postDetailModal = byId("post-detail-modal");
+  const postDetailTitle = byId("post-detail-modal-title");
+  const postDetailBody = byId("post-detail-body");
+  const closePostDetailBtn = byId("close-post-detail-btn");
+  const postCommentForm = byId("post-comment-form");
+  const postCommentFileInput = byId("post-comment-file");
+  const postCommentClipBtn = byId("post-comment-clip-btn");
+  const postCommentInput = byId("post-comment-input");
+  const postCommentAttachmentPreview = byId("post-comment-attachment-preview");
+
   let lastCreatedStoryId = null;
   let lastCreatedPostId = null;
   let pendingStoryId = null;
   let activeChatContext = null;
+  let activeShareModalRef = null; // { kind: "story" | "creator", id: string }
+  let activePostModalRef = null; // { kind: "story" | "creator", id: string }
+  let draftCommentMedia = { image: "", video: "", name: "" };
   let notifFilterMode = "all";
   let searchQuery = "";
   let draftStoryImage = "";
@@ -1540,8 +2406,10 @@ if (storiesList) {
 
   function syncCompactSectionLabel(tabId = "stories-view") {
     if (compactSectionLabel) {
-      compactSectionLabel.textContent =
-        tabId === "creators-view" ? "🎬 Espacio de Creadores" : "📖 Muro de Relatos";
+      compactSectionLabel.innerHTML =
+        tabId === "creators-view"
+          ? `${iconHtml("film", "umbral-icon--sm")} Espacio de Creadores`
+          : `${iconHtml("scroll", "umbral-icon--sm")} Muro de Relatos`;
     }
   }
 
@@ -1581,7 +2449,7 @@ if (storiesList) {
     const user = getCurrentUser();
     if (!user) return;
 
-    [topAvatarBtn, menuUserAvatar, leftRailAvatar, quickComposerAvatar].forEach((slot) =>
+    [topAvatarBtn, menuUserAvatar, leftRailAvatar, quickComposerAvatar, shareModalAvatar].forEach((slot) =>
       fillAvatarSlot(slot, user)
     );
 
@@ -1703,28 +2571,34 @@ if (storiesList) {
 
   const performLogout = () => {
     localStorage.removeItem(STORAGE_KEYS.session);
-    window.location.href = "login.html";
+    navigateWithTransition("login.html");
   };
   logoutBtn?.addEventListener("click", performLogout);
   menuLogoutBtn?.addEventListener("click", performLogout);
+
+  function setSessionLabel(iconName, text, modeClass) {
+    if (!sessionStatusEl) return;
+    sessionStatusEl.classList.remove("is-creator", "is-user");
+    if (modeClass) sessionStatusEl.classList.add(modeClass);
+    sessionStatusEl.innerHTML = "";
+    sessionStatusEl.append(iconEl(iconName, "umbral-icon--sm"), document.createTextNode(text));
+  }
 
   function syncSessionUI() {
     const user = getCurrentUser();
     if (!user) return;
 
     const isCreator = user.role === "creador";
-    sessionStatusEl?.classList.remove("is-creator", "is-user");
     if (authorInput) {
       authorInput.value = user.username || "";
       authorInput.readOnly = true;
     }
 
     if (isCreator) {
-      if (sessionStatusEl) {
-        sessionStatusEl.textContent = `🎬 Creador: ${user.username}`;
-        sessionStatusEl.classList.add("is-creator");
+      setSessionLabel("film", `Creador: ${user.username}`, "is-creator");
+      if (compactRoleBadge) {
+        compactRoleBadge.innerHTML = `${iconHtml("film", "umbral-icon--sm")} Creador: ${user.username}`;
       }
-      if (compactRoleBadge) compactRoleBadge.textContent = `🎬 Creador: ${user.username}`;
       creatorsTabBtn?.classList.remove("is-hidden");
       railCreatorsBtn?.classList.remove("is-hidden");
       toggleCreatorComposerBtn?.classList.remove("is-hidden");
@@ -1734,11 +2608,10 @@ if (storiesList) {
       }
       if (creatorNetworkInput && user.channel) creatorNetworkInput.value = user.channel;
     } else {
-      if (sessionStatusEl) {
-        sessionStatusEl.textContent = `✍️ Narrador: ${user.username}`;
-        sessionStatusEl.classList.add("is-user");
+      setSessionLabel("quill", `Narrador: ${user.username}`, "is-user");
+      if (compactRoleBadge) {
+        compactRoleBadge.innerHTML = `${iconHtml("quill", "umbral-icon--sm")} Narrador: ${user.username}`;
       }
-      if (compactRoleBadge) compactRoleBadge.textContent = `✍️ Narrador: ${user.username}`;
       creatorsTabBtn?.classList.add("is-hidden");
       railCreatorsBtn?.classList.add("is-hidden");
       toggleCreatorComposerBtn?.classList.add("is-hidden");
@@ -1780,7 +2653,7 @@ if (storiesList) {
     }
   });
 
-  function addNotification(recipientId, text, preview = "") {
+  function addNotification(recipientId, text, preview = "", iconName = "bell") {
     if (!recipientId) return;
     const notifs = loadData(STORAGE_KEYS.notifs, []);
     notifs.unshift({
@@ -1788,6 +2661,7 @@ if (storiesList) {
       recipientId,
       text,
       preview,
+      iconName,
       read: false,
       createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     });
@@ -1827,7 +2701,10 @@ if (storiesList) {
       item.className = `notif-item ${n.read ? "" : "is-unread"}`;
 
       const msg = document.createElement("div");
-      msg.textContent = n.text;
+      msg.style.display = "flex";
+      msg.style.alignItems = "flex-start";
+      msg.style.gap = "0.35rem";
+      msg.append(iconEl(n.iconName || "bell", "umbral-icon--sm umbral-icon--accent"), document.createTextNode(n.text));
       item.appendChild(msg);
 
       if (n.preview) {
@@ -1864,7 +2741,12 @@ if (storiesList) {
   function toggleFollow(targetKey, targetName, recipientUserId = null) {
     toggleFollowRecord(targetKey, targetName, (currentUser) => {
       if (recipientUserId) {
-        addNotification(recipientUserId, `⭐ ${currentUser.username} comenzó a seguir tu perfil.`);
+        addNotification(
+          recipientUserId,
+          `${currentUser.username} comenzó a seguir tu perfil.`,
+          "",
+          "star"
+        );
       }
     });
     syncTopProfileWidget();
@@ -1877,7 +2759,7 @@ if (storiesList) {
     if (isSelf) {
       const ownBadge = document.createElement("span");
       ownBadge.className = "badge";
-      ownBadge.textContent = `👥 ${followers} seguidores`;
+      ownBadge.append(iconEl("users", "umbral-icon--sm"), document.createTextNode(` ${followers} seguidores`));
       return ownBadge;
     }
 
@@ -1893,7 +2775,11 @@ if (storiesList) {
     const followBtn = document.createElement("button");
     followBtn.type = "button";
     followBtn.className = `btn-follow ${following ? "is-following" : ""}`;
-    followBtn.textContent = `${following ? "✓ Siguiendo" : "+ Seguir"} · ${followers}`;
+    setButtonContent(
+      followBtn,
+      following ? "check" : "star",
+      `${following ? "Siguiendo" : "Seguir"} · ${followers}`
+    );
     followBtn.addEventListener("click", () => toggleFollow(targetKey, targetName, recipientUserId));
     return followBtn;
   }
@@ -1912,7 +2798,7 @@ if (storiesList) {
       mini.title = `Ver perfil de ${name}`;
       mini.onerror = () => mini.remove();
       mini.addEventListener("click", () => {
-        window.location.href = profileHref;
+        navigateWithTransition(profileHref, `Abriendo perfil de ${name}...`);
       });
       wrap.appendChild(mini);
     }
@@ -1923,11 +2809,527 @@ if (storiesList) {
     btn.textContent = name;
     btn.title = `Ver perfil de ${name}`;
     btn.addEventListener("click", () => {
-      window.location.href = profileHref;
+      navigateWithTransition(profileHref, `Abriendo perfil de ${name}...`);
     });
     wrap.appendChild(btn);
     return wrap;
   }
+
+  // --- LIKES, COMPARTIDOS ÚNICOS Y MODAL ESTILO FACEBOOK ---
+  function refreshAfterPostMutation() {
+    renderStories();
+    renderCreatorPosts();
+    if (activePostModalRef && postDetailModal?.classList.contains("is-open")) {
+      renderPostDetailModal(activePostModalRef.kind, activePostModalRef.id);
+    }
+  }
+
+  function buildShareableUrl(kind, postId) {
+    const tabParam = kind === "creator" ? "creators-view" : "stories-view";
+    const base = `${window.location.origin}${window.location.pathname}`;
+    return `${base}?tab=${encodeURIComponent(tabParam)}&post=${encodeURIComponent(postId)}`;
+  }
+
+  function renderShareContactsRow(kind, postId) {
+    if (!shareContactsRow) return;
+    shareContactsRow.innerHTML = "";
+    const user = getCurrentUser();
+    const agreements = getAcceptedAgreementsForUser(user);
+
+    if (agreements.length === 0) {
+      const msg = document.createElement("span");
+      msg.className = "fb-right-muted";
+      msg.textContent = "Aún no tienes acuerdos activos para enviar directo.";
+      shareContactsRow.appendChild(msg);
+      return;
+    }
+
+    agreements.forEach((ag) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "share-contact-btn";
+      btn.title = `Enviar a ${ag.peerName} (${ag.storyTitle})`;
+
+      const avatar = document.createElement("span");
+      avatar.className = "share-contact-avatar";
+      const peerAvatar = lookupAvatarForEntry({ authorId: ag.peerId, name: ag.peerName });
+      if (isDataImage(peerAvatar)) {
+        const img = document.createElement("img");
+        img.src = peerAvatar;
+        img.alt = ag.peerName;
+        avatar.appendChild(img);
+      } else {
+        avatar.textContent = (ag.peerName || "U").charAt(0).toUpperCase();
+      }
+
+      const label = document.createElement("span");
+      label.className = "share-contact-name";
+      label.textContent = ag.peerName;
+
+      btn.append(avatar, label);
+      btn.addEventListener("click", () => {
+        if (!user) return;
+        sharePostRecord(kind, postId, user, {
+          note: shareCommentInput?.value || "",
+          visibility: sharePrivacySelect?.value || "Público"
+        });
+        const link = buildShareableUrl(kind, postId);
+        const customNote = (shareCommentInput?.value || "").trim();
+        const chatMsg = customNote
+          ? `Compartió una publicación: “${customNote}” · ${link}`
+          : `Compartió una publicación contigo: ${link}`;
+        appendAgreementMessage(ag.storyId, ag.requestId, user, chatMsg);
+        refreshAfterPostMutation();
+        if (shareModalStatus) {
+          shareModalStatus.textContent = `Enviado por chat de acuerdos a ${ag.peerName}.`;
+        }
+      });
+
+      shareContactsRow.appendChild(btn);
+    });
+  }
+
+  function openShareModal(kind, postId) {
+    const user = getCurrentUser();
+    const { post } = findPostRecord(kind, postId);
+    if (!user || !post) return;
+
+    activeShareModalRef = { kind, id: postId };
+    fillAvatarSlot(shareModalAvatar, user);
+    if (shareModalUsername) shareModalUsername.textContent = user.username || "Usuario";
+
+    const existingMeta = post.shareMeta?.[user.id];
+    const alreadyShared = hasUserSharedPost(post, user.id);
+
+    if (sharePrivacySelect) {
+      sharePrivacySelect.value = existingMeta?.visibility || "Público";
+    }
+    if (shareCommentInput) {
+      shareCommentInput.value = existingMeta?.note || "";
+    }
+    if (shareModalStatus) {
+      shareModalStatus.textContent = alreadyShared
+        ? "Ya compartiste esta publicación en tu perfil (cuenta 1 vez por usuario). Elige dónde o a quién enviarla:"
+        : "Al compartir se agregará a tu perfil una sola vez y podrás enviarla a donde quieras.";
+    }
+
+    renderShareContactsRow(kind, postId);
+    sharePostModal?.classList.add("is-open");
+    sharePostModal?.setAttribute("aria-hidden", "false");
+    setTimeout(() => shareCommentInput?.focus(), 100);
+  }
+
+  function closeShareModal() {
+    activeShareModalRef = null;
+    sharePostModal?.classList.remove("is-open");
+    sharePostModal?.setAttribute("aria-hidden", "true");
+  }
+
+  closeSharePostBtn?.addEventListener("click", closeShareModal);
+  sharePostModal?.addEventListener("click", (e) => {
+    if (e.target === sharePostModal) closeShareModal();
+  });
+
+  sharePostForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const user = getCurrentUser();
+    if (!activeShareModalRef || !user) return;
+
+    const { alreadyShared, addedNow } = sharePostRecord(
+      activeShareModalRef.kind,
+      activeShareModalRef.id,
+      user,
+      {
+        note: shareCommentInput?.value || "",
+        visibility: sharePrivacySelect?.value || "Público"
+      }
+    );
+
+    refreshAfterPostMutation();
+    if (shareModalStatus) {
+      shareModalStatus.textContent = addedNow
+        ? "Listo: ya quedó compartida en tu perfil."
+        : alreadyShared
+          ? "Nota actualizada; ya figuraba compartida en tu perfil."
+          : "Compartido.";
+    }
+  });
+
+  shareTargetsGrid?.addEventListener("click", async (e) => {
+    const btn = e.target.closest?.("[data-share-target]");
+    if (!btn || !activeShareModalRef) return;
+    const user = getCurrentUser();
+    if (!user) return;
+
+    const target = btn.dataset.shareTarget;
+    sharePostRecord(activeShareModalRef.kind, activeShareModalRef.id, user, {
+      note: shareCommentInput?.value || "",
+      visibility: sharePrivacySelect?.value || "Público"
+    });
+    refreshAfterPostMutation();
+
+    const url = buildShareableUrl(activeShareModalRef.kind, activeShareModalRef.id);
+    if (target === "copiar") {
+      try {
+        await navigator.clipboard?.writeText(url);
+      } catch (_) {}
+      if (shareModalStatus) shareModalStatus.textContent = "Enlace copiado al portapapeles.";
+      return;
+    }
+
+    closeShareModal();
+    if (target === "perfil") {
+      navigateWithTransition("perfil.html", "Abriendo tu perfil...");
+    } else if (target === "acuerdos") {
+      openFirstAvailableAgreementChat();
+    } else if (target === "creadores" && user.role === "creador") {
+      switchFeedTab("creators-view");
+    } else if (target === "relatos") {
+      switchFeedTab("stories-view");
+    }
+  });
+
+  function handleLikeAction(kind, postId) {
+    const user = getCurrentUser();
+    if (!user) return;
+    togglePostLike(kind, postId, user.id);
+    refreshAfterPostMutation();
+  }
+
+  /**
+   * Al pulsar Compartir en una tarjeta:
+   * - Si el usuario aún no la ha compartido: la registra 1 sola vez en su perfil y sube 1 vez el contador.
+   * - Si ya la había compartido: NO suma otro compartido; abre el modal estilo Facebook para elegir destino/persona.
+   */
+  function handleShareAction(kind, postId) {
+    const user = getCurrentUser();
+    if (!user) return;
+    const { post } = findPostRecord(kind, postId);
+    if (!post) return;
+
+    const alreadyShared = hasUserSharedPost(post, user.id);
+    if (!alreadyShared) {
+      sharePostRecord(kind, postId, user, {
+        visibility: "Público"
+      });
+      refreshAfterPostMutation();
+    }
+    openShareModal(kind, postId);
+  }
+
+  function buildPostSocialBlock(kind, post) {
+    const user = getCurrentUser();
+    const likes = Array.isArray(post.likes) ? post.likes : [];
+    const sharedBy = Array.from(new Set(Array.isArray(post.sharedBy) ? post.sharedBy : []));
+    const sharesCount = sharedBy.length;
+    const comments = Array.isArray(post.comments) ? post.comments : [];
+
+    const isLiked = Boolean(user && likes.includes(user.id));
+    const isShared = Boolean(user && sharedBy.includes(user.id));
+
+    const statsRow = document.createElement("div");
+    statsRow.className = "post-social-stats-row";
+
+    const leftStats = document.createElement("span");
+    leftStats.className = "post-social-stat-group";
+    leftStats.textContent = `${likes.length} ${likes.length === 1 ? "me gusta" : "me gusta"}`;
+
+    const rightStats = document.createElement("span");
+    rightStats.className = "post-social-stat-group";
+    rightStats.textContent = `${comments.length} ${comments.length === 1 ? "comentario" : "comentarios"} · ${sharesCount} ${sharesCount === 1 ? "compartido" : "compartidos"}`;
+
+    statsRow.append(leftStats, rightStats);
+
+    const actionsBar = document.createElement("div");
+    actionsBar.className = "post-social-actions-bar";
+
+    const likeBtn = document.createElement("button");
+    likeBtn.type = "button";
+    likeBtn.className = `post-social-btn ${isLiked ? "is-liked" : ""}`;
+    setButtonContent(likeBtn, "star", isLiked ? "Te gusta" : "Me gusta");
+    likeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      handleLikeAction(kind, post.id);
+    });
+
+    const commentBtn = document.createElement("button");
+    commentBtn.type = "button";
+    commentBtn.className = "post-social-btn";
+    setButtonContent(commentBtn, "chat", comments.length > 0 ? `Comentar (${comments.length})` : "Comentar");
+    commentBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openPostDetailModal(kind, post.id);
+    });
+
+    const shareBtn = document.createElement("button");
+    shareBtn.type = "button";
+    shareBtn.className = `post-social-btn ${isShared ? "is-shared" : ""}`;
+    setButtonContent(
+      shareBtn,
+      "megaphone",
+      isShared ? `Compartido (${sharesCount})` : sharesCount > 0 ? `Compartir (${sharesCount})` : "Compartir"
+    );
+    shareBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      handleShareAction(kind, post.id);
+    });
+
+    actionsBar.append(likeBtn, commentBtn, shareBtn);
+
+    const frag = document.createDocumentFragment();
+    frag.append(statsRow, actionsBar);
+    return frag;
+  }
+
+  function clearCommentAttachment() {
+    draftCommentMedia = { image: "", video: "", name: "" };
+    if (postCommentFileInput) postCommentFileInput.value = "";
+    if (postCommentAttachmentPreview) {
+      postCommentAttachmentPreview.innerHTML = "";
+      postCommentAttachmentPreview.classList.remove("has-file");
+    }
+  }
+
+  function syncCommentAttachmentPreview() {
+    if (!postCommentAttachmentPreview) return;
+    postCommentAttachmentPreview.innerHTML = "";
+    if (!draftCommentMedia.image && !draftCommentMedia.video) {
+      postCommentAttachmentPreview.classList.remove("has-file");
+      return;
+    }
+
+    if (isDataImage(draftCommentMedia.image)) {
+      const img = document.createElement("img");
+      img.src = draftCommentMedia.image;
+      img.alt = draftCommentMedia.name || "Imagen adjunta";
+      postCommentAttachmentPreview.appendChild(img);
+    } else if (isDataVideo(draftCommentMedia.video)) {
+      const vid = document.createElement("video");
+      vid.src = draftCommentMedia.video;
+      vid.controls = true;
+      vid.preload = "metadata";
+      postCommentAttachmentPreview.appendChild(vid);
+    }
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "post-comment-attachment-name";
+    nameSpan.textContent = draftCommentMedia.name || "Archivo adjunto";
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "post-comment-remove-file";
+    removeBtn.textContent = "Quitar";
+    removeBtn.addEventListener("click", clearCommentAttachment);
+
+    postCommentAttachmentPreview.append(nameSpan, removeBtn);
+    postCommentAttachmentPreview.classList.add("has-file");
+  }
+
+  postCommentClipBtn?.addEventListener("click", () => {
+    postCommentFileInput?.click();
+  });
+
+  postCommentFileInput?.addEventListener("change", async () => {
+    const file = postCommentFileInput.files?.[0];
+    if (!file) return;
+    if (file.size > LIMITS.maxStoryMediaBytes) {
+      postCommentFileInput.value = "";
+      return;
+    }
+    const dataUrl = await readFileAsDataUrl(file);
+    draftCommentMedia = {
+      image: isDataImage(dataUrl) ? dataUrl : "",
+      video: isDataVideo(dataUrl) ? dataUrl : "",
+      name: file.name || "adjunto"
+    };
+    syncCommentAttachmentPreview();
+  });
+
+  function renderPostDetailModal(kind, postId) {
+    if (!postDetailBody) return;
+    const { post } = findPostRecord(kind, postId);
+    if (!post) return;
+
+    const isCreator = kind === "creator";
+    const authorName = isCreator ? post.channel || "Creador" : post.author || "Narrador";
+    if (postDetailTitle) {
+      postDetailTitle.textContent = `Publicación de ${authorName}`;
+    }
+
+    postDetailBody.innerHTML = "";
+
+    const postBox = document.createElement("div");
+    postBox.className = "post-detail-post-box";
+
+    const heading = document.createElement("h4");
+    heading.style.margin = "0 0 0.35rem 0";
+    heading.textContent = isCreator
+      ? `${post.type || "Publicación de creador"} · ${authorName}`
+      : post.title || "Relato";
+
+    const meta = document.createElement("div");
+    meta.className = "story-meta";
+    meta.textContent = isCreator
+      ? `${authorName} · ${post.network || ""}`
+      : `Por ${authorName} · ${post.category || ""}`;
+
+    const textEl = document.createElement("p");
+    textEl.style.margin = "0.55rem 0 0 0";
+    textEl.textContent = isCreator ? post.message || "" : post.content || "";
+
+    postBox.append(heading, meta, textEl);
+
+    if (isDataImage(post.image) || isDataVideo(post.video)) {
+      const mediaWrap = document.createElement("div");
+      mediaWrap.className = "story-media-wrap";
+      if (isDataImage(post.image)) {
+        const img = document.createElement("img");
+        img.src = post.image;
+        img.alt = heading.textContent;
+        img.className = "story-media-img";
+        mediaWrap.appendChild(img);
+      }
+      if (isDataVideo(post.video)) {
+        const vid = document.createElement("video");
+        vid.src = post.video;
+        vid.controls = true;
+        vid.preload = "metadata";
+        vid.className = "story-media-video";
+        mediaWrap.appendChild(vid);
+      }
+      postBox.appendChild(mediaWrap);
+    }
+
+    postBox.appendChild(buildPostSocialBlock(kind, post));
+    postDetailBody.appendChild(postBox);
+
+    const commentsSec = document.createElement("div");
+    commentsSec.className = "post-detail-comments-section";
+
+    const comments = Array.isArray(post.comments) ? post.comments : [];
+    const commentsTitle = document.createElement("h4");
+    commentsTitle.className = "post-detail-comments-title";
+    commentsTitle.textContent = `Comentarios públicos (${comments.length})`;
+    commentsSec.appendChild(commentsTitle);
+
+    if (comments.length === 0) {
+      const empty = document.createElement("p");
+      empty.style.cssText = "color:#9aa2b8;font-size:0.86rem;margin:0;";
+      empty.textContent = "Aún no hay comentarios. ¡Escribe el primero o adjunta una imagen o video!";
+      commentsSec.appendChild(empty);
+    } else {
+      comments.forEach((c) => {
+        const item = document.createElement("div");
+        item.className = "post-comment-item";
+
+        const cAvatar = lookupAvatarForEntry({
+          authorId: c.authorId || "",
+          name: c.authorName || "",
+          fallbackAvatar: c.authorAvatar || ""
+        });
+        item.appendChild(buildAvatarElement(c.authorName || "U", cAvatar, "mini-avatar"));
+
+        const cBody = document.createElement("div");
+        cBody.className = "post-comment-body";
+
+        const cHead = document.createElement("div");
+        cHead.className = "post-comment-head";
+
+        const cAuthor = document.createElement("span");
+        cAuthor.className = "post-comment-author";
+        cAuthor.textContent = c.authorName || "Usuario";
+
+        const cTime = document.createElement("span");
+        cTime.className = "post-comment-time";
+        cTime.textContent = c.time || "";
+
+        cHead.append(cAuthor, cTime);
+        cBody.appendChild(cHead);
+
+        if (c.text) {
+          const cText = document.createElement("p");
+          cText.className = "post-comment-text";
+          cText.textContent = c.text;
+          cBody.appendChild(cText);
+        }
+
+        if (isDataImage(c.image)) {
+          const cImg = document.createElement("img");
+          cImg.src = c.image;
+          cImg.alt = `Adjunto de ${c.authorName || "usuario"}`;
+          cImg.className = "post-comment-media";
+          cBody.appendChild(cImg);
+        }
+
+        if (isDataVideo(c.video)) {
+          const cVid = document.createElement("video");
+          cVid.src = c.video;
+          cVid.controls = true;
+          cVid.preload = "metadata";
+          cVid.className = "post-comment-media";
+          cBody.appendChild(cVid);
+        }
+
+        item.appendChild(cBody);
+        commentsSec.appendChild(item);
+      });
+    }
+
+    postDetailBody.appendChild(commentsSec);
+    postDetailBody.scrollTop = postDetailBody.scrollHeight;
+  }
+
+  function openPostDetailModal(kind, postId) {
+    const { post } = findPostRecord(kind, postId);
+    if (!post) return;
+    activePostModalRef = { kind, id: postId };
+    clearCommentAttachment();
+    if (postCommentInput) {
+      const me = getCurrentUser();
+      postCommentInput.placeholder = me
+        ? `Comentar como ${me.username}...`
+        : "Escribe un comentario...";
+      postCommentInput.value = "";
+    }
+    renderPostDetailModal(kind, postId);
+    postDetailModal?.classList.add("is-open");
+    postDetailModal?.setAttribute("aria-hidden", "false");
+    setTimeout(() => postCommentInput?.focus(), 100);
+  }
+
+  function closePostDetailModal() {
+    activePostModalRef = null;
+    clearCommentAttachment();
+    postDetailModal?.classList.remove("is-open");
+    postDetailModal?.setAttribute("aria-hidden", "true");
+  }
+
+  closePostDetailBtn?.addEventListener("click", closePostDetailModal);
+  postDetailModal?.addEventListener("click", (e) => {
+    if (e.target === postDetailModal) closePostDetailModal();
+  });
+
+  postCommentForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const user = getCurrentUser();
+    if (!activePostModalRef || !user) return;
+
+    const added = addPublicPostComment(
+      activePostModalRef.kind,
+      activePostModalRef.id,
+      user,
+      {
+        text: postCommentInput?.value || "",
+        image: draftCommentMedia.image,
+        video: draftCommentMedia.video
+      }
+    );
+    if (!added) return;
+
+    if (postCommentInput) postCommentInput.value = "";
+    clearCommentAttachment();
+    refreshAfterPostMutation();
+  });
 
   tabButtons.forEach((btn) => btn.addEventListener("click", () => switchFeedTab(btn.dataset.tab)));
   railButtons.forEach((btn) => btn.addEventListener("click", () => switchFeedTab(btn.dataset.railTab)));
@@ -2029,7 +3431,9 @@ if (storiesList) {
     if (target.authorId) {
       addNotification(
         target.authorId,
-        `🎙️ El creador ${user.username} pidió permiso para relatar "${target.title}".`
+        `El creador ${user.username} pidió permiso para relatar "${target.title}".`,
+        "",
+        "mic"
       );
     }
 
@@ -2052,7 +3456,9 @@ if (storiesList) {
     if (req.creatorId) {
       addNotification(
         req.creatorId,
-        `📌 ${currentUser.username} marcó como ${newStatus} tu solicitud para "${target.title}".`
+        `${currentUser.username} marcó como ${newStatus} tu solicitud para "${target.title}".`,
+        "",
+        "pin"
       );
     }
     renderStories();
@@ -2062,25 +3468,6 @@ if (storiesList) {
   function hasAcceptedAgreement(story, requestObj, currentUser) {
     if (!currentUser || !story || !requestObj || requestObj.status !== "Aceptada") return false;
     return story.authorId === currentUser.id || requestObj.creatorId === currentUser.id;
-  }
-
-  function getAcceptedAgreementsForUser(currentUser) {
-    if (!currentUser) return [];
-    const agreements = [];
-    loadData(STORAGE_KEYS.stories, []).forEach((story) => {
-      (Array.isArray(story.requests) ? story.requests : []).forEach((req) => {
-        if (hasAcceptedAgreement(story, req, currentUser)) {
-          agreements.push({
-            storyId: story.id,
-            requestId: req.id,
-            storyTitle: story.title,
-            peerName: story.authorId === currentUser.id ? req.creator : story.author,
-            messagesCount: (req.messages || []).length
-          });
-        }
-      });
-    });
-    return agreements;
   }
 
   function renderAgreedChatsSidebar() {
@@ -2116,7 +3503,7 @@ if (storiesList) {
       const openBtn = document.createElement("button");
       openBtn.type = "button";
       openBtn.className = "btn-chat";
-      openBtn.textContent = `💬 (${item.messagesCount})`;
+      setButtonContent(openBtn, "chat", `(${item.messagesCount})`);
       openBtn.addEventListener("click", () => openChatModal(item.storyId, item.requestId));
 
       row.append(info, openBtn);
@@ -2173,6 +3560,8 @@ if (storiesList) {
       allPopoverCtrls.forEach((c) => c.setOpen(false));
       if (permissionModal?.classList.contains("is-open")) closePermissionModal();
       if (chatModal?.classList.contains("is-open")) closeChatModal();
+      if (sharePostModal?.classList.contains("is-open")) closeShareModal();
+      if (postDetailModal?.classList.contains("is-open")) closePostDetailModal();
     }
   });
 
@@ -2217,38 +3606,17 @@ if (storiesList) {
     const currentUser = getCurrentUser();
     if (!activeChatContext || !currentUser) return;
 
-    const text = chatInput?.value.trim() || "";
-    if (!text) return;
-
-    const stories = loadData(STORAGE_KEYS.stories, []);
-    const story = stories.find((s) => s.id === activeChatContext.storyId);
-    const req = story?.requests?.find((r) => r.id === activeChatContext.requestId);
-    if (!story || !req || !hasAcceptedAgreement(story, req, currentUser)) return;
-
-    const roleLabel = currentUser.role === "creador" ? "Creador" : "Autor";
-    if (!Array.isArray(req.messages)) req.messages = [];
-    req.messages.push({
-      id: crypto.randomUUID(),
-      senderId: currentUser.id,
-      senderName: currentUser.username,
-      senderRole: roleLabel,
-      text,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    });
-
-    saveData(STORAGE_KEYS.stories, stories);
-
-    const recipientId = currentUser.id === story.authorId ? req.creatorId : story.authorId;
-    if (recipientId) {
-      addNotification(
-        recipientId,
-        `💬 Nuevo mensaje en acuerdo de "${story.title}" (${roleLabel}):`,
-        text
-      );
-    }
+    const result = appendAgreementMessage(
+      activeChatContext.storyId,
+      activeChatContext.requestId,
+      currentUser,
+      chatInput?.value || ""
+    );
+    if (!result) return;
 
     if (chatInput) chatInput.value = "";
     renderChatMessages();
+    renderNotifications();
     renderStories();
   });
 
@@ -2330,23 +3698,29 @@ if (storiesList) {
       if (!story.allowCreators) {
         const badge = document.createElement("span");
         badge.className = "badge";
-        badge.textContent = "🔒 Solo lectura en la app";
+        badge.append(iconEl("lock", "umbral-icon--sm"), document.createTextNode(" Solo lectura en la app"));
         card.appendChild(badge);
       } else if (isOwner) {
         const badge = document.createElement("span");
         badge.className = "badge";
-        badge.textContent = "🎙️ Abierto a solicitudes de creadores";
+        badge.append(
+          iconEl("mic", "umbral-icon--sm"),
+          document.createTextNode(" Abierto a solicitudes de creadores")
+        );
         card.appendChild(badge);
       } else if (currentUser?.role === "creador") {
         if (requests.some((r) => r.creatorId === currentUser.id)) {
           const badge = document.createElement("span");
           badge.className = "badge";
-          badge.textContent = "✓ Ya enviaste solicitud para este relato";
+          badge.append(
+            iconEl("check", "umbral-icon--sm"),
+            document.createTextNode(" Ya enviaste solicitud para este relato")
+          );
           card.appendChild(badge);
         } else {
           const reqBtn = document.createElement("button");
           reqBtn.type = "button";
-          reqBtn.textContent = "🎙️ Pedir permiso para relatar";
+          setButtonContent(reqBtn, "mic", "Pedir permiso para relatar");
           reqBtn.addEventListener("click", () => openPermissionModal(story));
           card.appendChild(reqBtn);
         }
@@ -2391,13 +3765,13 @@ if (storiesList) {
             const acceptBtn = document.createElement("button");
             acceptBtn.type = "button";
             acceptBtn.className = "btn-mini btn-accept";
-            acceptBtn.textContent = "✓ Aceptar";
+            setButtonContent(acceptBtn, "check", "Aceptar");
             acceptBtn.addEventListener("click", () => updateRequestStatus(story.id, index, "Aceptada"));
 
             const rejectBtn = document.createElement("button");
             rejectBtn.type = "button";
             rejectBtn.className = "btn-mini btn-reject";
-            rejectBtn.textContent = "✕ Rechazar";
+            setButtonContent(rejectBtn, "close", "Rechazar");
             rejectBtn.addEventListener("click", () => updateRequestStatus(story.id, index, "Rechazada"));
 
             actions.append(acceptBtn, rejectBtn);
@@ -2408,7 +3782,7 @@ if (storiesList) {
             chatBtn.type = "button";
             chatBtn.className = "btn-chat";
             const count = (r.messages || []).length;
-            chatBtn.textContent = count > 0 ? `💬 Chat (${count})` : "💬 Chat";
+            setButtonContent(chatBtn, "chat", count > 0 ? `Chat (${count})` : "Chat");
             chatBtn.addEventListener("click", () => openChatModal(story.id, r.id));
             actions.appendChild(chatBtn);
           }
@@ -2420,6 +3794,7 @@ if (storiesList) {
         card.appendChild(reqBox);
       }
 
+      card.appendChild(buildPostSocialBlock("story", story));
       storiesList.appendChild(card);
     });
 
@@ -2482,23 +3857,22 @@ if (storiesList) {
       const messageEl = document.createElement("p");
       messageEl.textContent = post.message;
 
-      card.append(topRow, titleEl, metaEl, messageEl);
+      card.append(topRow, titleEl, metaEl, messageEl, buildPostSocialBlock("creator", post));
       creatorPostsList.appendChild(card);
     });
 
     lastCreatedPostId = null;
   }
 
-  function triggerPublishFeedback(button, drawer, triggerBtn, defaultLabel, afterCallback) {
-    const btnText = button?.querySelector("span");
-    if (btnText) btnText.textContent = "✓ Publicado";
+  function triggerPublishFeedback(button, drawer, triggerBtn, defaultIcon, defaultLabel, afterCallback) {
+    setButtonContent(button, "check", "Publicado");
     button?.classList.add("is-published");
 
     afterCallback();
 
     setTimeout(() => {
       setDrawerState(drawer, triggerBtn, false);
-      if (btnText) btnText.textContent = defaultLabel;
+      setButtonContent(button, defaultIcon, defaultLabel);
       button?.classList.remove("is-published");
     }, 650);
   }
@@ -2527,7 +3901,12 @@ if (storiesList) {
       image: draftStoryImage || "",
       video: draftStoryVideo || "",
       allowCreators: Boolean(byId("allow-creators")?.checked),
-      requests: []
+      requests: [],
+      likes: [],
+      sharedBy: [],
+      shareMeta: {},
+      sharesCount: 0,
+      comments: []
     };
 
     const stories = loadData(STORAGE_KEYS.stories, []);
@@ -2540,16 +3919,23 @@ if (storiesList) {
     }
 
     lastCreatedStoryId = newStory.id;
-    triggerPublishFeedback(publishBtn, composerDrawer, toggleComposerBtn, "✨ Publicar relato", () => {
-      draftStoryImage = "";
-      draftStoryVideo = "";
-      if (storyImageFileInput) storyImageFileInput.value = "";
-      if (storyVideoFileInput) storyVideoFileInput.value = "";
-      syncDraftMediaPreview();
-      renderStories();
-      form.reset();
-      syncSessionUI();
-    });
+    triggerPublishFeedback(
+      publishBtn,
+      composerDrawer,
+      toggleComposerBtn,
+      "flame",
+      "Publicar relato",
+      () => {
+        draftStoryImage = "";
+        draftStoryVideo = "";
+        if (storyImageFileInput) storyImageFileInput.value = "";
+        if (storyVideoFileInput) storyVideoFileInput.value = "";
+        syncDraftMediaPreview();
+        renderStories();
+        form.reset();
+        syncSessionUI();
+      }
+    );
   });
 
   creatorPostForm?.addEventListener("submit", (event) => {
@@ -2576,7 +3962,12 @@ if (storiesList) {
       channel: currentUser.username,
       network,
       type: byId("creator-post-type")?.value || "Próximo video / Estreno",
-      message
+      message,
+      likes: [],
+      sharedBy: [],
+      shareMeta: {},
+      sharesCount: 0,
+      comments: []
     };
 
     const posts = loadData(STORAGE_KEYS.creatorPosts, []);
@@ -2588,7 +3979,8 @@ if (storiesList) {
       publishCreatorBtn,
       creatorDrawer,
       toggleCreatorComposerBtn,
-      "📢 Publicar en espacio de creadores",
+      "megaphone",
+      "Publicar en espacio de creadores",
       () => {
         renderCreatorPosts();
         creatorPostForm.reset();
@@ -2605,5 +3997,16 @@ if (storiesList) {
     renderStories();
     renderCreatorPosts();
     renderNotifications();
+
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    const postParam = params.get("post");
+    if (tabParam === "creators-view" && initialSession.role === "creador") {
+      switchFeedTab("creators-view");
+    }
+    if (postParam) {
+      const targetKind = tabParam === "creators-view" ? "creator" : "story";
+      openPostDetailModal(targetKind, postParam);
+    }
   }
 }

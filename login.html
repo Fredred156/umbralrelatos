@@ -6,15 +6,23 @@
   <title>Umbral — Iniciar sesión</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body class="umbral-horror-login">
   <div class="ambient-bg" aria-hidden="true"></div>
+  <div class="umbral-horror-vignette" aria-hidden="true"></div>
 
   <main class="auth-page">
-    <section class="auth-box">
+    <section class="auth-box umbral-horror-card">
       <div class="auth-brand">
-        <h1>Umbral</h1>
-        <p>Inicia sesión para entrar al muro o al espacio de creadores</p>
+        <h1 class="umbral-horror-title">Umbral</h1>
+        <p>Cruza la penumbra e inicia sesión para entrar al muro o al espacio de creadores</p>
       </div>
+
+      <aside class="umbral-welcome-banner" aria-label="Aviso de prueba gratuita">
+        <span class="umbral-welcome-tag">Acceso de prueba gratis</span>
+        <p>
+          <strong>¡Te damos la bienvenida a Umbral!</strong> Esta versión es una prueba gratuita abierta para todos: crea tu cuenta o entra con tu apodo para explorar relatos, perfiles y funciones sin costo.
+        </p>
+      </aside>
 
       <form id="login-page-form">
         <label class="field-label" for="login-username">Apodo o nombre de canal</label>
@@ -35,58 +43,29 @@
 
         <p id="login-error" class="form-error" style="display: none;"></p>
 
-        <button type="submit" class="btn-primary">
-          <span>Iniciar sesión</span>
+        <button type="submit" class="btn-primary umbral-horror-submit">
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.5 3 4 5.2 4 8a4 4 0 1 1-8 0c0-1.7.7-3.2 2-4.8-.2 2 .8 3.2 2 3.2 1.1 0 2-.9 2-2.2 0-1.6-.8-2.9-2-4.2Z"></path></svg>
+          </span>
+          <span>Cruzar el umbral</span>
         </button>
       </form>
 
       <div class="auth-switch">
-        ¿No tienes cuenta? <a href="registro.html">Crear cuenta</a>
+        ¿Aún no tienes cuenta? <a href="registro.html" data-transition-text="Abriendo registro...">Crear cuenta gratis</a>
       </div>
     </section>
   </main>
 
-  <script>
-    const USERS_KEY = "umbral_users_v1";
-    const SESSION_KEY = "umbral_active_session_v1";
+  <div id="umbral-transition" class="umbral-transition-overlay" aria-hidden="true">
+    <div class="umbral-loader-ring"></div>
+    <p id="umbral-transition-text" class="umbral-loader-label">Abriendo el umbral...</p>
+  </div>
 
-    const loginForm = document.getElementById("login-page-form");
-    const usernameInput = document.getElementById("login-username");
-    const passwordInput = document.getElementById("login-password");
-    const errorEl = document.getElementById("login-error");
-
-    // Si ya hay sesión activa, pasa directo a la app principal
-    if (localStorage.getItem(SESSION_KEY)) {
-      window.location.href = "index.html";
-    }
-
-    loginForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      errorEl.style.display = "none";
-
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value;
-      const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-      const user = users.find((u) => u.username.toLowerCase() === username.toLowerCase());
-
-      if (!user || user.password !== password) {
-        errorEl.textContent = "Apodo o contraseña incorrectos.";
-        errorEl.style.display = "block";
-        return;
-      }
-
-      localStorage.setItem(
-        SESSION_KEY,
-        JSON.stringify({
-          id: user.id,
-          username: user.username,
-          role: user.role,
-          channel: user.channel || ""
-        })
-      );
-
-      window.location.href = "index.html";
-    });
-  </script>
+  <script src="icons.js"></script>
+  <script src="transition.js"></script>
+  <script src="storage.js"></script>
+  <script src="auth-profile.js"></script>
+  <script src="feed.js"></script>
 </body>
 </html>

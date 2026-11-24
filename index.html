@@ -40,16 +40,32 @@
 
           <hr class="fb-menu-divider" />
 
-          <a href="perfil.html" class="fb-menu-item" role="menuitem">👤 Ver perfil</a>
-          <a href="editar-perfil.html" class="fb-menu-item" role="menuitem">✏️ Editar perfil</a>
+          <a href="perfil.html" class="fb-menu-item" role="menuitem">
+            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 20a8 8 0 0 1 16 0"></path></svg>
+            </span>
+            <span>Ver perfil</span>
+          </a>
+          <a href="editar-perfil.html" class="fb-menu-item" role="menuitem">
+            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            </span>
+            <span>Editar perfil</span>
+          </a>
           <button type="button" class="fb-menu-item" id="menu-open-chat-hub-btn" role="menuitem">
-            💬 Acuerdos y chat
+            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4l2.2-3.3A8 8 0 1 1 21 12Z"></path></svg>
+            </span>
+            <span>Acuerdos y chat</span>
           </button>
 
           <hr class="fb-menu-divider" />
 
           <button type="button" class="fb-menu-item fb-menu-danger" id="menu-logout-btn" role="menuitem">
-            🚪 Cerrar sesión
+            <span class="umbral-icon umbral-icon--sm umbral-icon--danger" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>
+            </span>
+            <span>Cerrar sesión</span>
           </button>
         </div>
       </div>
@@ -57,7 +73,9 @@
       <a href="index.html" class="fb-brand-wordmark">UMBRAL</a>
 
       <label class="fb-search-box" aria-label="Buscar en Umbral">
-        <span>🔍</span>
+        <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        </span>
         <input
           type="search"
           id="feed-search-input"
@@ -69,7 +87,9 @@
 
     <nav class="fb-topbar-center" aria-label="Secciones principales">
       <button type="button" class="fb-nav-tab tab-btn is-active" data-tab="stories-view">
-        <span>📖</span>
+        <span class="umbral-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8"></path><path d="M8 4v4H4"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg>
+        </span>
         <span class="fb-nav-label">Relatos</span>
       </button>
       <button
@@ -78,7 +98,9 @@
         id="creators-tab-btn"
         data-tab="creators-view"
       >
-        <span>🎬</span>
+        <span class="umbral-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 5v14"></path><path d="M17 5v14"></path><path d="M3 10h4"></path><path d="M17 10h4"></path><path d="M3 14h4"></path><path d="M17 14h4"></path></svg>
+        </span>
         <span class="fb-nav-label">Creadores</span>
       </button>
     </nav>
@@ -94,7 +116,9 @@
           aria-label="Notificaciones"
           aria-expanded="false"
         >
-          🔔
+          <span class="umbral-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path><path d="M9.5 17a2.5 2.5 0 0 0 5 0"></path></svg>
+          </span>
           <span class="notif-badge is-hidden" id="notif-badge">0</span>
         </button>
 
@@ -125,12 +149,17 @@
           aria-label="Configuraciones"
           aria-expanded="false"
         >
-          ⚙️
+          <span class="umbral-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </span>
         </button>
 
         <div class="fb-settings-popover" id="settings-popover" role="menu">
           <div class="fb-settings-title">
-            <span>⚙️ Configuraciones</span>
+            <span class="umbral-icon umbral-icon--sm umbral-icon--accent" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </span>
+            <span>Configuraciones</span>
           </div>
 
           <button type="button" class="fb-settings-row" id="setting-toggle-follow-privacy">
@@ -173,7 +202,7 @@
 
   <!-- Barra compacta secundaria (mantenida para compatibilidad de scripts/estilos) -->
   <div id="compact-scroll-bar" class="compact-scroll-bar" aria-hidden="true">
-    <span id="compact-section-label">📖 Muro de Relatos</span>
+    <span id="compact-section-label">Muro de Relatos</span>
     <span id="compact-role-badge"></span>
   </div>
 
@@ -187,7 +216,9 @@
       </a>
 
       <button type="button" class="fb-rail-btn is-active" data-rail-tab="stories-view">
-        <span>📖</span>
+        <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8"></path><path d="M8 4v4H4"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg>
+        </span>
         <span>Muro de relatos</span>
       </button>
 
@@ -197,17 +228,23 @@
         id="rail-creators-btn"
         data-rail-tab="creators-view"
       >
-        <span>🎬</span>
+        <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 5v14"></path><path d="M17 5v14"></path><path d="M3 10h4"></path><path d="M17 10h4"></path><path d="M3 14h4"></path><path d="M17 14h4"></path></svg>
+        </span>
         <span>Espacio de creadores</span>
       </button>
 
       <button type="button" class="fb-rail-btn" id="rail-agreements-chat-btn">
-        <span>💬</span>
+        <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4l2.2-3.3A8 8 0 1 1 21 12Z"></path></svg>
+        </span>
         <span>Chats de acuerdos</span>
       </button>
 
       <a href="editar-perfil.html" class="fb-rail-btn">
-        <span>✏️</span>
+        <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+        </span>
         <span>Editar perfil</span>
       </a>
 
@@ -229,7 +266,10 @@
             aria-expanded="false"
             aria-controls="composer-drawer"
           >
-            <span>✍️ Crear relato y opciones</span>
+            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4c-6 0-12 4-14 11l-2 5 5-2c7-2 11-8 11-14Z"></path><path d="m14 10-8 8"></path></svg>
+            </span>
+            <span>Crear relato y opciones</span>
           </button>
           <button
             type="button"
@@ -238,14 +278,20 @@
             aria-expanded="false"
             aria-controls="creator-drawer"
           >
-            <span>🎬 Publicar novedad o video</span>
+            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 5v14"></path><path d="M17 5v14"></path><path d="M3 10h4"></path><path d="M17 10h4"></path><path d="M3 14h4"></path><path d="M17 14h4"></path></svg>
+            </span>
+            <span>Publicar novedad o video</span>
           </button>
         </div>
 
         <div id="composer-drawer" class="composer-drawer" aria-hidden="true">
           <form id="story-form">
             <p class="fb-explicit-warning">
-              ⚠️ Comparte experiencias reales o anécdotas genuinas de forma responsable.
+              <span class="umbral-icon umbral-icon--sm umbral-icon--danger" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+              </span>
+              <span>Comparte experiencias reales o anécdotas genuinas de forma responsable.</span>
             </p>
 
             <label class="field-label" for="title">Título del relato</label>
@@ -302,7 +348,10 @@
             </label>
 
             <button type="submit" class="btn-primary" id="publish-btn">
-              <span>✨ Publicar relato</span>
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.5 3 4 5.2 4 8a4 4 0 1 1-8 0c0-1.7.7-3.2 2-4.8-.2 2 .8 3.2 2 3.2 1.1 0 2-.9 2-2.2 0-1.6-.8-2.9-2-4.2Z"></path></svg>
+              </span>
+              <span>Publicar relato</span>
             </button>
           </form>
         </div>
@@ -344,7 +393,10 @@
             ></textarea>
 
             <button type="submit" class="btn-primary" id="publish-creator-btn">
-              <span>📢 Publicar en espacio de creadores</span>
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-5v12L3 13v-2Z"></path><path d="M17 9a3 3 0 0 1 0 6"></path><path d="M7 14.5 9 20h3l-1-5.5"></path></svg>
+              </span>
+              <span>Publicar en espacio de creadores</span>
             </button>
           </form>
         </div>
@@ -373,7 +425,12 @@
     <aside class="fb-sidebar-right" aria-label="Acuerdos y chat">
       <div class="fb-right-card">
         <div class="notif-header" style="margin-bottom: 0.35rem;">
-          <h3>💬 Acuerdos activos</h3>
+          <h3>
+            <span class="umbral-icon umbral-icon--sm umbral-icon--accent" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4l2.2-3.3A8 8 0 1 1 21 12Z"></path></svg>
+            </span>
+            <span>Acuerdos activos</span>
+          </h3>
           <span class="notif-count is-hidden" id="chat-hub-badge">0</span>
         </div>
         <p class="fb-right-muted">
@@ -399,7 +456,11 @@
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="permission-modal-title">
       <div class="modal-header">
         <h3 id="permission-modal-title">Solicitar permiso para relatar</h3>
-        <button type="button" class="icon-close" id="close-modal-btn" aria-label="Cerrar">✕</button>
+        <button type="button" class="icon-close" id="close-modal-btn" aria-label="Cerrar">
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </span>
+        </button>
       </div>
 
       <p class="modal-preview" id="modal-story-preview"></p>
@@ -436,7 +497,11 @@
     >
       <div class="modal-header">
         <h3 id="chat-modal-title">Chat del acuerdo</h3>
-        <button type="button" class="icon-close" id="close-chat-btn" aria-label="Cerrar chat">✕</button>
+        <button type="button" class="icon-close" id="close-chat-btn" aria-label="Cerrar chat">
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </span>
+        </button>
       </div>
 
       <p class="modal-subtitle chat-context-subtitle" id="chat-context-subtitle"></p>
@@ -458,6 +523,171 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <!-- Modal: Compartir publicación estilo Facebook -->
+  <div class="modal-backdrop" id="share-post-modal" aria-hidden="true">
+    <div
+      class="modal-card share-post-modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="share-post-modal-title"
+    >
+      <div class="modal-header">
+        <h3 id="share-post-modal-title">Compartir</h3>
+        <button type="button" class="icon-close" id="close-share-post-btn" aria-label="Cerrar compartir">
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </span>
+        </button>
+      </div>
+
+      <div class="share-post-body">
+        <div class="share-user-bar">
+          <span class="fb-mini-rail-avatar" id="share-modal-avatar">U</span>
+          <div class="share-user-meta">
+            <strong id="share-modal-username">Usuario</strong>
+            <div class="share-scope-row">
+              <span class="share-chip-pill">Perfil</span>
+              <div class="select-wrapper share-privacy-select-wrap">
+                <select id="share-privacy-select" aria-label="Visibilidad al compartir">
+                  <option value="Público">Público</option>
+                  <option value="Seguidores">Seguidores</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form id="share-post-form" class="share-post-form">
+          <textarea
+            id="share-comment-input"
+            rows="2"
+            placeholder="Haz un comentario..."
+          ></textarea>
+          <p class="share-status-note" id="share-modal-status"></p>
+          <div class="share-submit-row">
+            <button type="submit" class="btn-primary share-now-btn" id="share-now-btn">
+              <span>Compartir ahora</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="share-section-block">
+          <div class="share-section-title">Enviar por chat de acuerdos</div>
+          <div id="share-contacts-row" class="share-contacts-row"></div>
+        </div>
+
+        <div class="share-section-block">
+          <div class="share-section-title">Compartir en</div>
+          <div class="share-targets-grid" id="share-targets-grid">
+            <button type="button" class="share-target-btn" data-share-target="perfil">
+              <span class="share-target-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 20a8 8 0 0 1 16 0"></path></svg>
+              </span>
+              <span>Tu perfil</span>
+            </button>
+
+            <button type="button" class="share-target-btn" data-share-target="acuerdos">
+              <span class="share-target-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4l2.2-3.3A8 8 0 1 1 21 12Z"></path></svg>
+              </span>
+              <span>Acuerdos</span>
+            </button>
+
+            <button type="button" class="share-target-btn" data-share-target="copiar">
+              <span class="share-target-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              </span>
+              <span>Copiar enlace</span>
+            </button>
+
+            <button type="button" class="share-target-btn" data-share-target="creadores">
+              <span class="share-target-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-5v12L3 13v-2Z"></path><path d="M17 9a3 3 0 0 1 0 6"></path></svg>
+              </span>
+              <span>Creadores</span>
+            </button>
+
+            <button type="button" class="share-target-btn" data-share-target="relatos">
+              <span class="share-target-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8"></path></svg>
+              </span>
+              <span>Relatos</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Vista ampliada de publicación, likes, compartidos y comentarios públicos -->
+  <div class="modal-backdrop" id="post-detail-modal" aria-hidden="true">
+    <div
+      class="modal-card post-detail-modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="post-detail-modal-title"
+    >
+      <div class="modal-header">
+        <h3 id="post-detail-modal-title">Publicación</h3>
+        <button type="button" class="icon-close" id="close-post-detail-btn" aria-label="Cerrar publicación">
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </span>
+        </button>
+      </div>
+
+      <div id="post-detail-body" class="post-detail-scroll-body"></div>
+
+      <form id="post-comment-form" class="post-comment-composer">
+        <div id="post-comment-attachment-preview" class="post-comment-attachment-preview"></div>
+        <div class="post-comment-input-row">
+          <input
+            type="file"
+            id="post-comment-file"
+            accept="image/*,video/*"
+            class="is-hidden"
+          />
+          <button
+            type="button"
+            class="post-clip-btn"
+            id="post-comment-clip-btn"
+            aria-label="Adjuntar imagen o video"
+            title="Adjuntar imagen o video"
+          >
+            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+            </span>
+          </button>
+          <input
+            type="text"
+            id="post-comment-input"
+            placeholder="Escribe un comentario..."
+            autocomplete="off"
+          />
+          <button
+            type="submit"
+            class="post-comment-send-btn"
+            aria-label="Enviar comentario"
+            title="Enviar comentario"
+          >
+            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="umbral-transition" class="umbral-transition-overlay" aria-hidden="true">
+    <div class="umbral-loader-ring"></div>
+    <p id="umbral-transition-text" class="umbral-loader-label">Entrando al muro...</p>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="transition.js"></script>
+  <script src="storage.js"></script>
+  <script src="auth-profile.js"></script>
+  <script src="feed.js"></script>
 </body>
 </html>

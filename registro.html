@@ -5,12 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Registro — Umbral</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    .umbral-horror-card h1,
+    .umbral-horror-card .auth-subtitle,
+    .umbral-horror-card .auth-footer {
+      text-align: center;
+    }
+
+    .umbral-horror-card .auth-subtitle {
+      margin-top: 0.35rem;
+      margin-bottom: 1rem;
+      color: #c9c1f0;
+      font-size: 0.92rem;
+    }
+
+    .umbral-horror-card .auth-footer {
+      margin-top: 1.15rem;
+      color: #c9c1f0;
+      font-size: 0.88rem;
+    }
+
+    .umbral-horror-card .auth-footer a {
+      color: #c4b5fd;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .umbral-horror-card .auth-footer a:hover {
+      color: #fca5a5;
+      text-decoration: underline;
+    }
+  </style>
 </head>
-<body>
+<body class="umbral-horror-login">
+  <div class="ambient-bg" aria-hidden="true"></div>
+  <div class="umbral-horror-vignette" aria-hidden="true"></div>
+
   <div class="auth-wrapper">
-    <div class="auth-card">
-      <h1>✨ Crear cuenta</h1>
+    <div class="auth-card umbral-horror-card">
+      <h1 class="umbral-horror-title">
+        <span class="umbral-icon umbral-icon--accent" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4c-6 0-12 4-14 11l-2 5 5-2c7-2 11-8 11-14Z"></path><path d="m14 10-8 8"></path></svg>
+        </span>
+        <span>Crear cuenta</span>
+      </h1>
       <p class="auth-subtitle">Únete como narrador o creador de contenido</p>
+
+      <aside class="umbral-welcome-banner" aria-label="Aviso de prueba gratuita">
+        <span class="umbral-welcome-tag">Prueba gratuita abierta</span>
+        <p>
+          <strong>¡Bienvenido a Umbral!</strong> Regístrate gratis y sin costo para publicar relatos, armar tu perfil y conectar con creadores desde esta versión de prueba.
+        </p>
+      </aside>
 
       <form id="register-page-form" class="form-grid" novalidate>
         <div class="field">
@@ -26,8 +72,8 @@
         <div class="field">
           <label for="reg-role">Rol en la plataforma</label>
           <select id="reg-role">
-            <option value="usuario">✍️ Usuario / Narrador</option>
-            <option value="creador">🎬 Creador de contenido</option>
+            <option value="usuario">Usuario / Narrador</option>
+            <option value="creador">Creador de contenido</option>
           </select>
         </div>
 
@@ -92,15 +138,24 @@
 
         <p id="reg-error" class="form-error" style="display: none;"></p>
 
-        <button type="submit" class="btn-primary">Crear cuenta y entrar</button>
+        <button type="submit" class="btn-primary umbral-horror-submit">Crear cuenta y entrar</button>
       </form>
 
       <p class="auth-footer">
-        ¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a>
+        ¿Ya tienes cuenta? <a href="login.html" data-transition-text="Volviendo al inicio de sesión...">Inicia sesión aquí</a>
       </p>
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <div id="umbral-transition" class="umbral-transition-overlay" aria-hidden="true">
+    <div class="umbral-loader-ring"></div>
+    <p id="umbral-transition-text" class="umbral-loader-label">Abriendo el umbral...</p>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="transition.js"></script>
+  <script src="storage.js"></script>
+  <script src="auth-profile.js"></script>
+  <script src="feed.js"></script>
 </body>
 </html>

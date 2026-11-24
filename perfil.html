@@ -6,17 +6,121 @@
   <title>Umbral — Perfil</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body class="umbral-profile-minimal">
   <div class="ambient-bg" aria-hidden="true"></div>
 
-  <header class="topbar">
-    <h1>👤 Perfil</h1>
-    <p>Tu identidad en la comunidad de Umbral</p>
+  <header class="prf-topbar">
+    <a href="index.html" class="prf-brand-link" data-transition-text="Volviendo al muro...">
+      <span class="umbral-icon umbral-icon--sm umbral-icon--accent" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.5 3 4 5.2 4 8a4 4 0 1 1-8 0c0-1.7.7-3.2 2-4.8-.2 2 .8 3.2 2 3.2 1.1 0 2-.9 2-2.2 0-1.6-.8-2.9-2-4.2Z"></path></svg>
+      </span>
+      <span>UMBRAL</span>
+    </a>
 
-    <div class="session-bar">
-      <a href="index.html" class="nav-link-page">📖 Volver al muro</a>
-      <div class="topbar-right-actions">
-        <button type="button" id="logout-btn" class="btn-session btn-logout">🚪 Salir</button>
+    <div class="prf-topbar-actions">
+      <!-- 1. Círculo: Chat de acuerdos (lista desplegable de usuarios / creadores) -->
+      <div class="prf-circle-wrap" id="prf-chat-wrap">
+        <button
+          type="button"
+          class="prf-circle-btn"
+          id="prf-chat-btn"
+          aria-label="Chats de acuerdos"
+          aria-expanded="false"
+          title="Chats de acuerdos"
+        >
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4l2.2-3.3A8 8 0 1 1 21 12Z"></path></svg>
+          </span>
+          <span class="notif-badge is-hidden" id="prf-chat-badge">0</span>
+        </button>
+
+        <section class="prf-popover" id="prf-chat-popover" aria-label="Chats de acuerdos">
+          <div class="prf-popover-head">
+            <h3>Chats de acuerdos</h3>
+          </div>
+          <div id="prf-chat-list" class="prf-chat-list"></div>
+        </section>
+      </div>
+
+      <!-- 2. Círculo: Notificaciones -->
+      <div class="prf-circle-wrap" id="prf-notif-wrap">
+        <button
+          type="button"
+          class="prf-circle-btn"
+          id="prf-bell-btn"
+          aria-label="Notificaciones"
+          aria-expanded="false"
+        >
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path><path d="M9.5 17a2.5 2.5 0 0 0 5 0"></path></svg>
+          </span>
+          <span class="notif-badge is-hidden" id="prf-notif-badge">0</span>
+        </button>
+
+        <section class="prf-popover" id="prf-notif-popover" aria-label="Notificaciones">
+          <div class="prf-popover-head">
+            <h3>Notificaciones</h3>
+            <button type="button" class="btn-mini" id="prf-mark-read-btn">Marcar leídas</button>
+          </div>
+          <div class="fb-notif-tabs">
+            <button type="button" class="fb-filter-chip is-active" id="prf-notif-all">Todas</button>
+            <button type="button" class="fb-filter-chip" id="prf-notif-unread">No leídas</button>
+          </div>
+          <div id="prf-notifications-list" class="notifications-list"></div>
+        </section>
+      </div>
+
+      <!-- 3. Círculo: Configuración de perfil -->
+      <div class="prf-circle-wrap" id="prf-settings-wrap">
+        <button
+          type="button"
+          class="prf-circle-btn"
+          id="prf-settings-btn"
+          aria-label="Configuración de perfil"
+          aria-expanded="false"
+        >
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </span>
+        </button>
+
+        <div class="prf-popover" id="prf-settings-popover" role="menu">
+          <div class="prf-popover-head">
+            <h3>Configuración de perfil</h3>
+          </div>
+
+          <button type="button" class="prf-action-row" id="prf-toggle-follow-list">
+            <span>
+              <strong>Listas de seguidores visibles</strong>
+              <small>Muestra u oculta tus seguidores y seguidos</small>
+            </span>
+            <span class="prf-pill" id="prf-follow-list-pill">Activa</span>
+          </button>
+
+          <button type="button" class="prf-action-row" id="prf-toggle-creators-rail">
+            <span>
+              <strong>Panel lateral de creadores</strong>
+              <small>Muestra u oculta favoritos y creadores aquí</small>
+            </span>
+            <span class="prf-pill" id="prf-creators-rail-pill">Visible</span>
+          </button>
+
+          <button type="button" class="prf-action-row" id="prf-go-edit-profile">
+            <span>
+              <strong>Editar datos, avatar o banner</strong>
+              <small>Abre el editor completo de tu perfil</small>
+            </span>
+            <span class="prf-pill">Abrir</span>
+          </button>
+
+          <button type="button" class="prf-action-row" id="prf-clear-read-notifs">
+            <span>
+              <strong>Limpiar notificaciones leídas</strong>
+              <small>Borra solo las notificaciones ya marcadas</small>
+            </span>
+            <span class="prf-pill">Limpiar</span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -25,6 +129,51 @@
     <section class="panel" id="profile-card-container"></section>
   </main>
 
-  <script src="app.js"></script>
+  <!-- Modal de chat de acuerdo en Perfil -->
+  <div class="modal-backdrop" id="prf-chat-modal" aria-hidden="true">
+    <div
+      class="modal-card chat-modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="prf-chat-modal-title"
+    >
+      <div class="modal-header">
+        <h3 id="prf-chat-modal-title">Chat del acuerdo</h3>
+        <button type="button" class="icon-close" id="prf-close-chat-btn" aria-label="Cerrar chat">
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </span>
+        </button>
+      </div>
+
+      <p class="modal-subtitle chat-context-subtitle" id="prf-chat-subtitle"></p>
+
+      <div id="prf-chat-messages" class="chat-messages"></div>
+
+      <form id="prf-chat-form" class="chat-form">
+        <input
+          type="text"
+          id="prf-chat-input"
+          placeholder="Escribe un mensaje para coordinar..."
+          autocomplete="off"
+          required
+        />
+        <button type="submit" class="btn-primary chat-send-btn">
+          <span>Enviar</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="umbral-transition" class="umbral-transition-overlay" aria-hidden="true">
+    <div class="umbral-loader-ring"></div>
+    <p id="umbral-transition-text" class="umbral-loader-label">Abriendo el umbral...</p>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="transition.js"></script>
+  <script src="storage.js"></script>
+  <script src="auth-profile.js"></script>
+  <script src="feed.js"></script>
 </body>
 </html>
