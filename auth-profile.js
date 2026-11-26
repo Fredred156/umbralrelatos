@@ -20,7 +20,7 @@ if (loginPageForm) {
       return;
     }
 
-    saveData(STORAGE_KEYS.session, buildSessionPayload(user));
+    persistSession(buildSessionPayload(user));
     navigateWithTransition("index.html", "Entrando al muro...");
   });
 }
@@ -48,7 +48,7 @@ if (registerPageForm) {
 
   const syncRoleFields = () => {
     if (creatorFields && roleSelect) {
-      creatorFields.style.display = roleSelect.value === "creador" ? "grid" : "none";
+      creatorFields.style.display = isCreatorUser(roleSelect.value) ? "grid" : "none";
     }
   };
   roleSelect?.addEventListener("change", syncRoleFields);
@@ -60,12 +60,20 @@ if (registerPageForm) {
 
     const username = byId("reg-username").value.trim();
     const password = byId("reg-password").value;
-    const role = roleSelect ? roleSelect.value : "usuario";
+    const rawRole = roleSelect ? roleSelect.value : USER_ROLES.standard;
+    const role = normalizeRole(rawRole);
     const shortDesc = byId("reg-short-desc")?.value.trim() || "";
-    const isCreator = role === "creador";
+    const isCreator = isCreatorUser(role);
     const bio = isCreator ? byId("reg-bio")?.value.trim() || "" : "";
     const channel = isCreator ? byId("reg-channel")?.value.trim() || "" : "";
     const socials = isCreator ? byId("reg-socials")?.value.trim() || "" : "";
+    const promoLinks = isCreator
+      ? normalizePromoLinks({
+          youtube: byId("reg-youtube")?.value || "",
+          tiktok: byId("reg-tiktok")?.value || "",
+          spotify: byId("reg-spotify")?.value || ""
+        })
+      : { youtube: "", tiktok: "", spotify: "" };
 
     if (!username || password.length < 4) {
       showFormError(errorEl, "Completa tu apodo y una contraseña de al menos 4 caracteres.");
@@ -80,6 +88,8 @@ if (registerPageForm) {
 
     const avatarData = await cropper.exportCroppedDataUrl();
     const bannerData = bannerUploader.getBannerDataUrl();
+    const nowTs = Date.now();
+    const nextMonthTs = nowTs + 30 * 24 * 60 * 60 * 1000;
 
     const newUser = {
       id: crypto.randomUUID(),
@@ -88,17 +98,39 @@ if (registerPageForm) {
       role,
       channel,
       socials,
+      promoLinks,
       avatar: avatarData,
       banner: bannerData,
       shortDesc,
       bio,
-      allowPublicFollowLists: true
+      allowPublicFollowLists: true,
+      betaFreeTrialUsed: isCreator,
+      subscription: isCreator
+        ? {
+            status: "active",
+            plan: "beta-primer-mes-gratis",
+            isFirstMonthFreeBeta: true,
+            priceUsd: 0,
+            method: "Pase Beta (1er Mes Gratis)",
+            startedAtTs: nowTs,
+            startedAtDate: nowDateLabel(nowTs),
+            nextBillingDate: nowDateLabel(nextMonthTs)
+          }
+        : null
     };
 
     users.push(newUser);
     saveData(STORAGE_KEYS.users, users);
-    saveData(STORAGE_KEYS.session, buildSessionPayload(newUser));
-    navigateWithTransition("index.html", "Entrando al muro...");
+    persistSession(buildSessionPayload(newUser));
+
+    if (isCreator) {
+      navigateWithTransition(
+        "suscripcion.html?welcome=beta",
+        "Activando tu 1er mes gratis Beta..."
+      );
+    } else {
+      navigateWithTransition("index.html", "Entrando al muro...");
+    }
   });
 }
 
@@ -109,6 +141,7 @@ if (editProfileForm) {
   if (!user) {
     navigateWithTransition("login.html");
   } else {
+    persistSession(user);
     const errorEl = byId("edit-error");
     const usernameInput = byId("edit-username");
     const shortDescInput = byId("edit-short-desc");
@@ -116,15 +149,21 @@ if (editProfileForm) {
     const bioInput = byId("edit-bio");
     const channelInput = byId("edit-channel");
     const socialsInput = byId("edit-socials");
+    const youtubeInput = byId("edit-youtube");
+    const tiktokInput = byId("edit-tiktok");
+    const spotifyInput = byId("edit-spotify");
 
     if (usernameInput) usernameInput.value = user.username || "";
     if (shortDescInput) shortDescInput.value = user.shortDesc || "";
 
-    if (user.role === "creador" && creatorFields) {
+    if (isCreatorUser(user) && creatorFields) {
       creatorFields.style.display = "grid";
       if (bioInput) bioInput.value = user.bio || "";
       if (channelInput) channelInput.value = user.channel || "";
       if (socialsInput) socialsInput.value = user.socials || "";
+      if (youtubeInput) youtubeInput.value = user.promoLinks?.youtube || "";
+      if (tiktokInput) tiktokInput.value = user.promoLinks?.tiktok || "";
+      if (spotifyInput) spotifyInput.value = user.promoLinks?.spotify || "";
     }
 
     const cropper = createAvatarCropper({
@@ -147,10 +186,17 @@ if (editProfileForm) {
       e.preventDefault();
       hideFormError(errorEl);
 
-      const isCreator = user.role === "creador";
+      const isCreator = isCreatorUser(user);
       const newUsername = usernameInput?.value.trim() || user.username;
       const newChannel = isCreator ? channelInput?.value.trim() || "" : "";
       const newAvatar = await cropper.exportCroppedDataUrl();
+      const newPromoLinks = isCreator
+        ? normalizePromoLinks({
+            youtube: youtubeInput?.value || "",
+            tiktok: tiktokInput?.value || "",
+            spotify: spotifyInput?.value || ""
+          })
+        : user.promoLinks || { youtube: "", tiktok: "", spotify: "" };
 
       const updatedUser = {
         ...user,
@@ -159,13 +205,14 @@ if (editProfileForm) {
         bio: isCreator ? bioInput?.value.trim() || "" : "",
         channel: newChannel,
         socials: isCreator ? socialsInput?.value.trim() || "" : "",
+        promoLinks: newPromoLinks,
         avatar: newAvatar,
         banner: bannerUploader.getBannerDataUrl(),
         allowPublicFollowLists: isPublicFollowListsEnabled(user)
       };
 
       syncUserAcrossStorage(updatedUser);
-      updateUserReferencesInPosts(user.id, newUsername, newAvatar, newChannel);
+      updateUserReferencesInPosts(user.id, newUsername, newAvatar, newChannel, newPromoLinks);
       navigateWithTransition("perfil.html", "Guardando perfil...");
     });
   }
@@ -178,10 +225,11 @@ if (profilePageRoot) {
   if (!currentUser) {
     navigateWithTransition("login.html");
   } else {
+    persistSession(currentUser);
     const lightbox = ensureMediaLightbox();
     byId("logout-btn")?.addEventListener("click", () => {
-      localStorage.removeItem(STORAGE_KEYS.session);
-      navigateWithTransition("login.html");
+      clearActiveSession();
+      navigateWithTransition("login.html", "Cerrando sesión...");
     });
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -189,8 +237,8 @@ if (profilePageRoot) {
     const requestedName = urlParams.get("name") || "";
 
     const users = loadData(STORAGE_KEYS.users, []);
-    const allStories = loadData(STORAGE_KEYS.stories, []);
-    const allPosts = loadData(STORAGE_KEYS.creatorPosts, []);
+    const allStoriesInitial = loadData(STORAGE_KEYS.stories, []);
+    const allPostsInitial = loadData(STORAGE_KEYS.creatorPosts, []);
 
     const matchedUser =
       users.find((u) => u.id === requestedKey) ||
@@ -198,12 +246,12 @@ if (profilePageRoot) {
       users.find((u) => u.username.toLowerCase() === requestedName.toLowerCase()) ||
       null;
 
-    const sampleStory = allStories.find(
+    const sampleStory = allStoriesInitial.find(
       (s) =>
         s.authorId === requestedKey ||
         (requestedName && (s.author || "").toLowerCase() === requestedName.toLowerCase())
     );
-    const samplePost = allPosts.find(
+    const samplePost = allPostsInitial.find(
       (p) =>
         p.authorId === requestedKey ||
         (requestedName && (p.channel || "").toLowerCase() === requestedName.toLowerCase())
@@ -218,17 +266,24 @@ if (profilePageRoot) {
       id: targetKey,
       username: targetUsername,
       handle: buildHandleSlug(targetUsername, targetKey),
-      role: matchedUser?.role || (samplePost ? "creador" : "usuario"),
-      channel: matchedUser?.channel || samplePost?.network || "",
-      socials: matchedUser?.socials || "",
+      role: normalizeRole(
+        isOwnProfile
+          ? currentUser.role
+          : matchedUser?.role || (samplePost ? USER_ROLES.creator : USER_ROLES.standard)
+      ),
+      channel: (isOwnProfile ? currentUser.channel : matchedUser?.channel) || samplePost?.network || "",
+      socials: (isOwnProfile ? currentUser.socials : matchedUser?.socials) || "",
+      promoLinks: normalizePromoLinks(
+        (isOwnProfile ? currentUser.promoLinks : matchedUser?.promoLinks) || {}
+      ),
       avatar:
         (isOwnProfile ? currentUser.avatar : matchedUser?.avatar) ||
         sampleStory?.authorAvatar ||
         samplePost?.authorAvatar ||
         "",
       banner: (isOwnProfile ? currentUser.banner : matchedUser?.banner) || "",
-      shortDesc: matchedUser?.shortDesc || "",
-      bio: matchedUser?.bio || "",
+      shortDesc: (isOwnProfile ? currentUser.shortDesc : matchedUser?.shortDesc) || "",
+      bio: (isOwnProfile ? currentUser.bio : matchedUser?.bio) || "",
       allowPublicFollowLists: isPublicFollowListsEnabled(matchedUser)
     };
 
@@ -236,9 +291,15 @@ if (profilePageRoot) {
     let creatorSearchTerm = "";
     let notifMode = "all";
     let activeProfileChatContext = null;
+    let activeShareContext = null;
+    let activeDetailContext = null;
+    let draftDetailAttachment = { image: "", video: "", name: "" };
     let activeOpenCreatorTile = null;
 
     const container = byId("profile-card-container");
+
+    const prfSimulatePlanBtn = byId("prf-simulate-plan-btn");
+    const prfSimulatePlanLabel = byId("prf-simulate-plan-label");
 
     const chatBtn = byId("prf-chat-btn");
     const chatPopover = byId("prf-chat-popover");
@@ -269,6 +330,619 @@ if (profilePageRoot) {
     const prfChatForm = byId("prf-chat-form");
     const prfChatInput = byId("prf-chat-input");
     const prfCloseChatBtn = byId("prf-close-chat-btn");
+
+    const sharePostModal = byId("share-post-modal");
+    const closeSharePostBtn = byId("close-share-post-btn");
+    const shareModalAvatar = byId("share-modal-avatar");
+    const shareModalUsername = byId("share-modal-username");
+    const sharePrivacySelect = byId("share-privacy-select");
+    const sharePostForm = byId("share-post-form");
+    const shareCommentInput = byId("share-comment-input");
+    const shareModalStatus = byId("share-modal-status");
+    const shareContactsRow = byId("share-contacts-row");
+    const shareTargetsGrid = byId("share-targets-grid");
+
+    const postDetailModal = byId("post-detail-modal");
+    const postDetailTitle = byId("post-detail-modal-title");
+    const postDetailBody = byId("post-detail-body");
+    const closePostDetailBtn = byId("close-post-detail-btn");
+    const postCommentForm = byId("post-comment-form");
+    const postCommentFileInput = byId("post-comment-file");
+    const postCommentClipBtn = byId("post-comment-clip-btn");
+    const postCommentInput = byId("post-comment-input");
+    const postCommentAttachmentPreview = byId("post-comment-attachment-preview");
+
+    const syncPlanSimulationButton = () => {
+      const me = getCurrentUser() || currentUser;
+      const isCreator = isCreatorUser(me);
+      if (prfSimulatePlanBtn) {
+        prfSimulatePlanBtn.classList.toggle("is-creator-active", isCreator);
+      }
+      if (prfSimulatePlanLabel) {
+        prfSimulatePlanLabel.textContent = isCreator
+          ? "Plan: Creador Suscrito (Cambiar a Gratis)"
+          : "Simular Suscripción Creador";
+      }
+    };
+
+    prfSimulatePlanBtn?.addEventListener("click", () => {
+      const updated = toggleCurrentUserSubscriptionPlan();
+      if (!updated) return;
+      if (isOwnProfile) {
+        profileData.role = normalizeRole(updated.role);
+        profileData.channel = updated.channel || profileData.channel;
+        profileData.promoLinks = normalizePromoLinks(updated.promoLinks || profileData.promoLinks);
+      }
+      syncPlanSimulationButton();
+      renderProfileView();
+    });
+
+    const getShareList = (post) => {
+      if (!post) return [];
+      const raw = Array.isArray(post.sharedBy)
+        ? post.sharedBy
+        : Array.isArray(post.shares)
+          ? post.shares
+          : [];
+      return Array.from(new Set(raw));
+    };
+
+    const hasAlreadySharedPost = (post, userId) => {
+      if (!post || !userId) return false;
+      return getShareList(post).includes(userId) || Boolean(post.shareMeta && post.shareMeta[userId]);
+    };
+
+    const formatProfileShareStamp = (meta = {}) => {
+      const ts = Number(meta?.sharedAtTs);
+      if (Number.isFinite(ts) && ts > 0) {
+        const d = new Date(ts);
+        const fecha = d.toLocaleDateString([], {
+          day: "2-digit",
+          month: "short",
+          year: "numeric"
+        });
+        const hora = d.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+        return `${fecha} · ${hora}`;
+      }
+      if (meta?.sharedAtDate && meta?.sharedAt) {
+        return `${meta.sharedAtDate} · ${meta.sharedAt}`;
+      }
+      return meta?.sharedAt || "Hace un momento";
+    };
+
+    const resolvePostRecordById = (postId, preferredKind = null) => {
+      const stories = loadData(STORAGE_KEYS.stories, []);
+      const creators = loadData(STORAGE_KEYS.creatorPosts, []);
+      if (preferredKind === "creator") {
+        const foundC = creators.find((p) => p.id === postId);
+        if (foundC) return { kind: "creator", post: foundC, list: creators, key: STORAGE_KEYS.creatorPosts };
+      }
+      const foundS = stories.find((s) => s.id === postId);
+      if (foundS) return { kind: "story", post: foundS, list: stories, key: STORAGE_KEYS.stories };
+      const foundC2 = creators.find((p) => p.id === postId);
+      if (foundC2) return { kind: "creator", post: foundC2, list: creators, key: STORAGE_KEYS.creatorPosts };
+      return null;
+    };
+
+    const recordShareOnPost = (postId, preferredKind, user, options = {}) => {
+      const found = resolvePostRecordById(postId, preferredKind);
+      if (!found || !user) return { alreadyShared: false, addedNow: false };
+
+      const { kind, post, list, key } = found;
+      const nowTs = Date.now();
+      const nowDateLabelLocal = new Date(nowTs).toLocaleDateString([], {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+      const nowTime = nowTimeLabel();
+
+      const sharedList = getShareList(post);
+      const alreadyShared = sharedList.includes(user.id) || Boolean(post.shareMeta?.[user.id]);
+      if (!sharedList.includes(user.id)) sharedList.push(user.id);
+
+      post.sharedBy = sharedList;
+      post.shares = sharedList;
+      post.sharesCount = sharedList.length;
+
+      if (!post.shareMeta || typeof post.shareMeta !== "object") post.shareMeta = {};
+      const prevMeta = post.shareMeta[user.id] || {};
+      post.shareMeta[user.id] = {
+        ...prevMeta,
+        sharerId: user.id,
+        sharerName: user.username || "Usuario",
+        note: options.note !== undefined ? String(options.note).trim() : prevMeta.note || "",
+        visibility: options.visibility || prevMeta.visibility || "Público",
+        sharedAtTs: prevMeta.sharedAtTs || nowTs,
+        sharedAtDate: prevMeta.sharedAtDate || nowDateLabelLocal,
+        sharedAt: prevMeta.sharedAt || nowTime
+      };
+
+      saveData(key, list);
+
+      if (!alreadyShared && post.authorId && post.authorId !== user.id) {
+        const notifs = loadData(STORAGE_KEYS.notifs, []);
+        notifs.unshift({
+          id: crypto.randomUUID(),
+          recipientId: post.authorId,
+          text: `${user.username} compartió tu publicación.`,
+          preview: kind === "creator" ? post.message || "" : post.title || post.content || "",
+          iconName: "megaphone",
+          read: false,
+          createdAt: nowTime
+        });
+        saveData(STORAGE_KEYS.notifs, notifs);
+      }
+
+      return { alreadyShared, addedNow: !alreadyShared };
+    };
+
+    const toggleLikeOnPost = (postId, preferredKind, user) => {
+      const found = resolvePostRecordById(postId, preferredKind);
+      if (!found || !user) return;
+      const { post, list, key } = found;
+      const likes = Array.isArray(post.likes) ? [...post.likes] : [];
+      const idx = likes.indexOf(user.id);
+      if (idx >= 0) likes.splice(idx, 1);
+      else likes.push(user.id);
+      post.likes = likes;
+      saveData(key, list);
+    };
+
+    const fillShareAvatar = (slotEl, user) => {
+      if (!slotEl || !user) return;
+      slotEl.innerHTML = "";
+      const avatarUrl = lookupAvatarForEntry({
+        authorId: user.id,
+        name: user.username,
+        fallbackAvatar: user.avatar || ""
+      });
+      if (isDataImage(avatarUrl)) {
+        const img = document.createElement("img");
+        img.src = avatarUrl;
+        img.alt = user.username || "Perfil";
+        slotEl.appendChild(img);
+      } else {
+        slotEl.textContent = (user.username || "U").charAt(0).toUpperCase();
+      }
+    };
+
+    const buildShareUrl = (kind, postId) => {
+      const tabParam = kind === "creator" ? "creators-view" : "stories-view";
+      const base = `${window.location.origin}/index.html`;
+      return `${base}?tab=${encodeURIComponent(tabParam)}&post=${encodeURIComponent(postId)}`;
+    };
+
+    const renderProfileShareContacts = (kind, postId) => {
+      if (!shareContactsRow) return;
+      shareContactsRow.innerHTML = "";
+      const me = getCurrentUser() || currentUser;
+      const agreements = getAcceptedAgreementsForUser(me);
+
+      if (agreements.length === 0) {
+        const msg = document.createElement("span");
+        msg.className = "fb-right-muted";
+        msg.textContent = "Aún no tienes acuerdos activos para enviar directo.";
+        shareContactsRow.appendChild(msg);
+        return;
+      }
+
+      agreements.forEach((ag) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "share-contact-btn";
+        btn.title = `Enviar a ${ag.peerName} (${ag.storyTitle})`;
+
+        const avatar = document.createElement("span");
+        avatar.className = "share-contact-avatar";
+        const peerAvatar = lookupAvatarForEntry({ authorId: ag.peerId, name: ag.peerName });
+        if (isDataImage(peerAvatar)) {
+          const img = document.createElement("img");
+          img.src = peerAvatar;
+          img.alt = ag.peerName;
+          avatar.appendChild(img);
+        } else {
+          avatar.textContent = (ag.peerName || "U").charAt(0).toUpperCase();
+        }
+
+        const label = document.createElement("span");
+        label.className = "share-contact-name";
+        label.textContent = ag.peerName;
+
+        btn.append(avatar, label);
+        btn.addEventListener("click", () => {
+          const activeUser = getCurrentUser() || currentUser;
+          if (!activeUser) return;
+          recordShareOnPost(postId, kind, activeUser, {
+            note: shareCommentInput?.value || "",
+            visibility: sharePrivacySelect?.value || "Público"
+          });
+          const link = buildShareUrl(kind, postId);
+          const customNote = (shareCommentInput?.value || "").trim();
+          const chatMsg = customNote
+            ? `Compartió una publicación: “${customNote}” · ${link}`
+            : `Compartió una publicación contigo: ${link}`;
+          appendAgreementMessage(ag.storyId, ag.requestId, activeUser, chatMsg);
+          renderProfileView();
+          if (shareModalStatus) {
+            shareModalStatus.textContent = `Enviado por chat de acuerdos a ${ag.peerName}.`;
+          }
+        });
+
+        shareContactsRow.appendChild(btn);
+      });
+    };
+
+    const closeProfileShareModal = () => {
+      activeShareContext = null;
+      sharePostModal?.classList.remove("is-open");
+      sharePostModal?.setAttribute("aria-hidden", "true");
+    };
+
+    const closeProfileDetailModal = () => {
+      activeDetailContext = null;
+      draftDetailAttachment = { image: "", video: "", name: "" };
+      if (postCommentFileInput) postCommentFileInput.value = "";
+      if (postCommentAttachmentPreview) {
+        postCommentAttachmentPreview.innerHTML = "";
+        postCommentAttachmentPreview.classList.remove("has-file");
+      }
+      postDetailModal?.classList.remove("is-open");
+      postDetailModal?.setAttribute("aria-hidden", "true");
+    };
+
+    const openProfileShareModal = (postId, preferredKind = null) => {
+      const me = getCurrentUser() || currentUser;
+      const found = resolvePostRecordById(postId, preferredKind);
+      if (!me || !found) return;
+
+      closeProfileDetailModal();
+      closeAllTopPopovers();
+
+      activeShareContext = { id: found.post.id, kind: found.kind };
+      fillShareAvatar(shareModalAvatar, me);
+      if (shareModalUsername) shareModalUsername.textContent = me.username || "Usuario";
+
+      const existingMeta = found.post.shareMeta?.[me.id];
+      const alreadyShared = hasAlreadySharedPost(found.post, me.id);
+
+      if (sharePrivacySelect) sharePrivacySelect.value = existingMeta?.visibility || "Público";
+      if (shareCommentInput) shareCommentInput.value = existingMeta?.note || "";
+      if (shareModalStatus) {
+        shareModalStatus.textContent = alreadyShared
+          ? `Ya compartiste esta publicación en tu perfil (${formatProfileShareStamp(existingMeta)}). Elige dónde o a quién enviarla:`
+          : "Al compartir se agregará a tu perfil con su fecha de compartido.";
+      }
+
+      renderProfileShareContacts(found.kind, found.post.id);
+      sharePostModal?.classList.add("is-open");
+      sharePostModal?.setAttribute("aria-hidden", "false");
+      setTimeout(() => shareCommentInput?.focus(), 100);
+    };
+
+    closeSharePostBtn?.addEventListener("click", closeProfileShareModal);
+    sharePostModal?.addEventListener("click", (e) => {
+      if (e.target === sharePostModal) closeProfileShareModal();
+    });
+
+    sharePostForm?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const me = getCurrentUser() || currentUser;
+      if (!activeShareContext || !me) return;
+
+      const { alreadyShared, addedNow } = recordShareOnPost(
+        activeShareContext.id,
+        activeShareContext.kind,
+        me,
+        {
+          note: shareCommentInput?.value || "",
+          visibility: sharePrivacySelect?.value || "Público"
+        }
+      );
+
+      renderProfileView();
+      if (shareModalStatus) {
+        shareModalStatus.textContent = addedNow
+          ? "Listo: ya quedó compartida en tu perfil con su fecha."
+          : alreadyShared
+            ? "Nota actualizada; conserva la fecha de cuando la compartiste."
+            : "Compartido.";
+      }
+    });
+
+    shareTargetsGrid?.addEventListener("click", async (e) => {
+      const btn = e.target.closest?.("[data-share-target]");
+      if (!btn || !activeShareContext) return;
+      const me = getCurrentUser() || currentUser;
+      if (!me) return;
+
+      recordShareOnPost(activeShareContext.id, activeShareContext.kind, me, {
+        note: shareCommentInput?.value || "",
+        visibility: sharePrivacySelect?.value || "Público"
+      });
+      renderProfileView();
+
+      const target = btn.dataset.shareTarget;
+      const url = buildShareUrl(activeShareContext.kind, activeShareContext.id);
+
+      if (target === "copiar") {
+        try {
+          await navigator.clipboard?.writeText(url);
+        } catch (_) {}
+        if (shareModalStatus) shareModalStatus.textContent = "Enlace copiado al portapapeles.";
+        return;
+      }
+
+      closeProfileShareModal();
+      if (target === "acuerdos") {
+        const agreements = getAcceptedAgreementsForUser(me);
+        if (agreements.length > 0) {
+          openProfileChatModal(agreements[0].storyId, agreements[0].requestId);
+        }
+      } else if (target === "creadores") {
+        navigateWithTransition("index.html?tab=creators-view", "Abriendo espacio de creadores...");
+      } else if (target === "relatos") {
+        navigateWithTransition("index.html?tab=stories-view", "Abriendo muro de relatos...");
+      }
+    });
+
+    const syncDetailAttachmentPreview = () => {
+      if (!postCommentAttachmentPreview) return;
+      postCommentAttachmentPreview.innerHTML = "";
+      if (!draftDetailAttachment.image && !draftDetailAttachment.video) {
+        postCommentAttachmentPreview.classList.remove("has-file");
+        return;
+      }
+      if (isDataImage(draftDetailAttachment.image)) {
+        const img = document.createElement("img");
+        img.src = draftDetailAttachment.image;
+        img.alt = draftDetailAttachment.name || "Adjunto";
+        postCommentAttachmentPreview.appendChild(img);
+      } else if (isDataVideo(draftDetailAttachment.video)) {
+        const vid = document.createElement("video");
+        vid.src = draftDetailAttachment.video;
+        vid.controls = true;
+        vid.playsInline = true;
+        vid.preload = "metadata";
+        postCommentAttachmentPreview.appendChild(vid);
+      }
+      const label = document.createElement("span");
+      label.className = "post-comment-attachment-name";
+      label.textContent = draftDetailAttachment.name || "Archivo adjunto";
+      const rmBtn = document.createElement("button");
+      rmBtn.type = "button";
+      rmBtn.className = "post-comment-remove-file";
+      rmBtn.textContent = "Quitar";
+      rmBtn.addEventListener("click", () => {
+        draftDetailAttachment = { image: "", video: "", name: "" };
+        if (postCommentFileInput) postCommentFileInput.value = "";
+        syncDetailAttachmentPreview();
+      });
+      postCommentAttachmentPreview.append(label, rmBtn);
+      postCommentAttachmentPreview.classList.add("has-file");
+    };
+
+    postCommentClipBtn?.addEventListener("click", () => postCommentFileInput?.click());
+    postCommentFileInput?.addEventListener("change", async () => {
+      const file = postCommentFileInput.files?.[0];
+      if (!file) return;
+      const me = getCurrentUser() || currentUser;
+      if (file.type.startsWith("video/")) {
+        const check = await validateVideoFileForUser(file, me);
+        if (!check.ok) {
+          alert(check.error);
+          postCommentFileInput.value = "";
+          return;
+        }
+      } else if (file.size > LIMITS.maxStoryMediaBytes) {
+        postCommentFileInput.value = "";
+        return;
+      }
+      const dataUrl = await readFileAsDataUrl(file);
+      draftDetailAttachment = {
+        image: isDataImage(dataUrl) ? dataUrl : "",
+        video: isDataVideo(dataUrl) ? dataUrl : "",
+        name: file.name || "adjunto"
+      };
+      syncDetailAttachmentPreview();
+    });
+
+    const renderProfileDetailModal = (postId, preferredKind = null) => {
+      if (!postDetailBody) return;
+      const found = resolvePostRecordById(postId, preferredKind);
+      if (!found) return;
+      const { kind, post } = found;
+      const isCreator = kind === "creator";
+      const authorName = isCreator ? post.channel || "Creador" : post.author || "Narrador";
+      if (postDetailTitle) postDetailTitle.textContent = `Publicación de ${authorName}`;
+
+      postDetailBody.innerHTML = "";
+      const box = document.createElement("div");
+      box.className = "post-detail-post-box";
+
+      const h4 = document.createElement("h4");
+      h4.style.margin = "0 0 0.35rem 0";
+      h4.textContent = isCreator
+        ? `${post.type || "Publicación de creador"} · ${authorName}`
+        : post.title || "Relato";
+
+      const meta = document.createElement("div");
+      meta.className = "story-meta";
+      meta.style.display = "inline-flex";
+      meta.style.alignItems = "center";
+      meta.style.gap = "0.35rem";
+      meta.append(document.createTextNode(isCreator ? `${authorName}` : `Por ${authorName}`));
+      if (isUserVerifiedCreator(post.authorId, authorName, isCreator)) {
+        meta.appendChild(buildVerifiedBadgeEl());
+      }
+      meta.append(
+        document.createTextNode(
+          isCreator
+            ? post.network ? ` · ${post.network}` : ""
+            : post.category ? ` · ${post.category}` : ""
+        )
+      );
+
+      const bodyP = document.createElement("p");
+      bodyP.style.margin = "0.55rem 0 0 0";
+      bodyP.textContent = isCreator ? post.message || "" : post.content || "";
+
+      box.append(h4, meta, bodyP);
+
+      if (isDataImage(post.image) || isDataVideo(post.video)) {
+        const mediaWrap = document.createElement("div");
+        mediaWrap.className = "story-media-wrap";
+        if (isDataImage(post.image)) {
+          const img = document.createElement("img");
+          img.src = post.image;
+          img.alt = h4.textContent;
+          img.className = "story-media-img";
+          mediaWrap.appendChild(img);
+        }
+        if (isDataVideo(post.video)) {
+          const vid = document.createElement("video");
+          vid.src = post.video;
+          vid.controls = true;
+          vid.playsInline = true;
+          vid.preload = "metadata";
+          vid.className = "story-media-video";
+          mediaWrap.appendChild(vid);
+        }
+        box.appendChild(mediaWrap);
+      }
+
+      postDetailBody.appendChild(box);
+
+      const sec = document.createElement("div");
+      sec.className = "post-detail-comments-section";
+      const comments = Array.isArray(post.comments) ? post.comments : [];
+      const titleC = document.createElement("h4");
+      titleC.className = "post-detail-comments-title";
+      titleC.textContent = `Comentarios públicos (${comments.length})`;
+      sec.appendChild(titleC);
+
+      if (comments.length === 0) {
+        const empty = document.createElement("p");
+        empty.style.cssText = "color:#9aa2b8;font-size:0.86rem;margin:0;";
+        empty.textContent = "Aún no hay comentarios. ¡Escribe el primero!";
+        sec.appendChild(empty);
+      } else {
+        comments.forEach((c) => {
+          const row = document.createElement("div");
+          row.className = "post-comment-item";
+          const cAv = lookupAvatarForEntry({
+            authorId: c.authorId || "",
+            name: c.authorName || "",
+            fallbackAvatar: c.authorAvatar || ""
+          });
+          row.appendChild(buildAvatarElement(c.authorName || "U", cAv, "mini-avatar"));
+          const cBody = document.createElement("div");
+          cBody.className = "post-comment-body";
+          const cHead = document.createElement("div");
+          cHead.className = "post-comment-head";
+          const cAuthor = document.createElement("span");
+          cAuthor.className = "post-comment-author";
+          cAuthor.style.display = "inline-flex";
+          cAuthor.style.alignItems = "center";
+          cAuthor.style.gap = "0.28rem";
+          cAuthor.textContent = c.authorName || "Usuario";
+          if (
+            isCreatorUser(c.authorRole) ||
+            isUserVerifiedCreator(c.authorId || "", c.authorName || "")
+          ) {
+            cAuthor.appendChild(buildVerifiedBadgeEl());
+          }
+          const cTime = document.createElement("span");
+          cTime.className = "post-comment-time";
+          cTime.textContent = c.time || "";
+          cHead.append(cAuthor, cTime);
+          cBody.appendChild(cHead);
+          if (c.text) {
+            const cText = document.createElement("p");
+            cText.className = "post-comment-text";
+            cText.textContent = c.text;
+            cBody.appendChild(cText);
+          }
+          if (isDataImage(c.image)) {
+            const cImg = document.createElement("img");
+            cImg.src = c.image;
+            cImg.alt = "Adjunto";
+            cImg.className = "post-comment-media";
+            cBody.appendChild(cImg);
+          }
+          if (isDataVideo(c.video)) {
+            const cVid = document.createElement("video");
+            cVid.src = c.video;
+            cVid.controls = true;
+            cVid.playsInline = true;
+            cVid.preload = "metadata";
+            cVid.className = "post-comment-media";
+            cBody.appendChild(cVid);
+          }
+          row.appendChild(cBody);
+          sec.appendChild(row);
+        });
+      }
+
+      postDetailBody.appendChild(sec);
+    };
+
+    const openProfileDetailModal = (postId, preferredKind = null) => {
+      const found = resolvePostRecordById(postId, preferredKind);
+      if (!found) return;
+      closeProfileShareModal();
+      closeAllTopPopovers();
+      activeDetailContext = { id: found.post.id, kind: found.kind };
+      if (postCommentInput) {
+        const me = getCurrentUser() || currentUser;
+        postCommentInput.placeholder = me
+          ? `Comentar como ${me.username}...`
+          : "Escribe un comentario...";
+        postCommentInput.value = "";
+      }
+      renderProfileDetailModal(found.post.id, found.kind);
+      postDetailModal?.classList.add("is-open");
+      postDetailModal?.setAttribute("aria-hidden", "false");
+      setTimeout(() => postCommentInput?.focus(), 100);
+    };
+
+    closePostDetailBtn?.addEventListener("click", closeProfileDetailModal);
+    postDetailModal?.addEventListener("click", (e) => {
+      if (e.target === postDetailModal) closeProfileDetailModal();
+    });
+
+    postCommentForm?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const me = getCurrentUser() || currentUser;
+      if (!activeDetailContext || !me) return;
+      const found = resolvePostRecordById(activeDetailContext.id, activeDetailContext.kind);
+      if (!found) return;
+      const textVal = (postCommentInput?.value || "").trim();
+      if (!textVal && !draftDetailAttachment.image && !draftDetailAttachment.video) return;
+
+      if (!Array.isArray(found.post.comments)) found.post.comments = [];
+      found.post.comments.push({
+        id: crypto.randomUUID(),
+        authorId: me.id,
+        authorName: me.username,
+        authorRole: normalizeRole(me.role),
+        authorAvatar: me.avatar || "",
+        text: textVal,
+        image: draftDetailAttachment.image || "",
+        video: draftDetailAttachment.video || "",
+        time: nowTimeLabel()
+      });
+      saveData(found.key, found.list);
+      if (postCommentInput) postCommentInput.value = "";
+      draftDetailAttachment = { image: "", video: "", name: "" };
+      if (postCommentFileInput) postCommentFileInput.value = "";
+      syncDetailAttachmentPreview();
+      renderProfileDetailModal(found.post.id, found.kind);
+      renderProfileView();
+    });
 
     const topPopovers = [
       { btn: chatBtn, panel: chatPopover },
@@ -418,10 +1092,9 @@ if (profilePageRoot) {
       if (agreements.length === 0) {
         const empty = document.createElement("p");
         empty.className = "prf-chat-empty";
-        empty.textContent =
-          me?.role === "creador"
-            ? "Aún no tienes acuerdos aceptados con narradores."
-            : "Aún no tienes acuerdos aceptados con creadores.";
+        empty.textContent = isCreatorUser(me)
+          ? "Aún no tienes acuerdos aceptados con narradores."
+          : "Aún no tienes acuerdos aceptados con creadores.";
         chatListEl.appendChild(empty);
         return;
       }
@@ -487,7 +1160,7 @@ if (profilePageRoot) {
 
       visibleNotifs.forEach((n) => {
         const item = document.createElement("div");
-        item.className = `notif-item ${n.read ? "" : "is-unread"}`;
+        item.className = `notif-item ${n.read ? "" : "is-unread"} ${n.isVipCallNotif ? "is-vip-notif" : ""}`;
         item.textContent = n.text;
         if (n.preview) {
           const quote = document.createElement("div");
@@ -597,6 +1270,8 @@ if (profilePageRoot) {
         closeAllTopPopovers();
         closeCreatorPopovers();
         if (prfChatModal?.classList.contains("is-open")) closeProfileChatModal();
+        if (sharePostModal?.classList.contains("is-open")) closeProfileShareModal();
+        if (postDetailModal?.classList.contains("is-open")) closeProfileDetailModal();
       }
     });
 
@@ -606,12 +1281,12 @@ if (profilePageRoot) {
       const latestPosts = loadData(STORAGE_KEYS.creatorPosts, []);
 
       latestUsers.forEach((u) => {
-        if (u.role === "creador") {
+        if (isCreatorUser(u)) {
           map.set(u.id, {
             id: u.id,
             username: u.username,
             handle: buildHandleSlug(u.username, u.id),
-            role: "creador",
+            role: USER_ROLES.creator,
             channel: u.channel || "",
             shortDesc: u.shortDesc || u.bio || "",
             avatar: u.avatar || ""
@@ -628,7 +1303,7 @@ if (profilePageRoot) {
           id: key,
           username: name,
           handle: existing?.handle || buildHandleSlug(name, key),
-          role: "creador",
+          role: USER_ROLES.creator,
           channel: existing?.channel || p.network || "",
           shortDesc: existing?.shortDesc || p.message || "",
           avatar: lookupAvatarForEntry({
@@ -649,16 +1324,23 @@ if (profilePageRoot) {
       const metaBox = document.createElement("div");
       metaBox.className = "follow-member-meta";
 
+      const nameWrap = document.createElement("span");
+      nameWrap.style.cssText = "display:inline-flex;align-items:center;gap:0.28rem;";
+
       const nameLink = document.createElement("a");
       nameLink.href = getProfileUrlForTarget(member.id, member.username);
       nameLink.className = "author-link-btn";
       nameLink.textContent = member.username;
+      nameWrap.appendChild(nameLink);
+      if (isCreatorUser(member.role)) {
+        nameWrap.appendChild(buildVerifiedBadgeEl());
+      }
 
       const subInfo = document.createElement("span");
       subInfo.className = "follow-member-sub";
-      subInfo.textContent = `${member.handle} · ${member.role === "creador" ? "Creador" : "Narrador"}`;
+      subInfo.textContent = `${member.handle} · ${isCreatorUser(member.role) ? "Creador Suscrito" : "Usuario Estándar"}`;
 
-      metaBox.append(nameLink, subInfo);
+      metaBox.append(nameWrap, subInfo);
       row.appendChild(metaBox);
       if (rightActionEl) row.appendChild(rightActionEl);
       return row;
@@ -705,7 +1387,9 @@ if (profilePageRoot) {
       topLine.className = "creator-popover-top";
 
       const nameEl = document.createElement("strong");
+      nameEl.style.cssText = "display:inline-flex;align-items:center;gap:0.3rem;";
       nameEl.textContent = creator.username;
+      nameEl.appendChild(buildVerifiedBadgeEl());
 
       const handleEl = document.createElement("span");
       handleEl.className = "creator-popover-handle";
@@ -792,7 +1476,7 @@ if (profilePageRoot) {
                   c.id === resolved.id ||
                   c.username.toLowerCase() === resolved.username.toLowerCase()
               );
-              return fromDir || (resolved.role === "creador" ? resolved : null);
+              return fromDir || (isCreatorUser(resolved.role) ? resolved : null);
             })
             .filter(Boolean)
         : [];
@@ -862,6 +1546,171 @@ if (profilePageRoot) {
       return box;
     };
 
+    const dispatchProfilePostAction = (actionType, entry, noticeEl = null) => {
+      const postId = entry?.id;
+      const postKind = entry?._kind === "creator" ? "creator" : "story";
+      if (!postId) return;
+
+      const me = getCurrentUser() || currentUser;
+      document.dispatchEvent(
+        new CustomEvent("umbral:profile-post-action", {
+          detail: { action: actionType, postId, postKind, entry }
+        })
+      );
+
+      if (actionType === "like") {
+        toggleLikeOnPost(postId, postKind, me);
+        renderProfileView();
+        return;
+      }
+
+      if (actionType === "comment") {
+        openProfileDetailModal(postId, postKind);
+        return;
+      }
+
+      if (actionType === "share") {
+        const alreadyShared = Boolean(me && hasAlreadySharedPost(entry, me.id));
+        if (alreadyShared && noticeEl) {
+          noticeEl.textContent = "Ya compartiste esta publicación anteriormente.";
+          noticeEl.style.display = "block";
+        }
+        if (me && !alreadyShared) {
+          recordShareOnPost(postId, postKind, me, { visibility: "Público" });
+          renderProfileView();
+        }
+        openProfileShareModal(postId, postKind);
+      }
+    };
+
+    const buildPostSocialBlock = (entry) => {
+      const me = getCurrentUser() || currentUser;
+      const likes = Array.isArray(entry.likes) ? entry.likes : [];
+      const comments = Array.isArray(entry.comments) ? entry.comments : [];
+      const shares = getShareList(entry);
+
+      const isLiked = Boolean(me && likes.includes(me.id));
+      const alreadyShared = Boolean(me && hasAlreadySharedPost(entry, me.id));
+
+      const statsRow = document.createElement("div");
+      statsRow.className = "post-social-stats-row";
+
+      const likesStat = document.createElement("span");
+      likesStat.className = "post-social-stat-group";
+      likesStat.textContent = `${likes.length} me gusta`;
+
+      const rightStats = document.createElement("span");
+      rightStats.className = "post-social-stat-group";
+      rightStats.textContent = `${comments.length} ${comments.length === 1 ? "comentario" : "comentarios"} · ${shares.length} ${shares.length === 1 ? "compartido" : "compartidos"}`;
+
+      statsRow.append(likesStat, rightStats);
+
+      const alreadySharedNotice = document.createElement("p");
+      alreadySharedNotice.className = "profile-already-shared-note";
+      alreadySharedNotice.style.cssText =
+        "color:#c4b5fd;font-size:0.8rem;margin:0.4rem 0 0;display:none;";
+      if (alreadyShared) {
+        alreadySharedNotice.style.display = "block";
+        alreadySharedNotice.textContent = "Ya compartiste esta publicación anteriormente.";
+      }
+
+      const actionsBar = document.createElement("div");
+      actionsBar.className = "post-social-actions-bar";
+
+      const likeBtn = document.createElement("button");
+      likeBtn.type = "button";
+      likeBtn.className = `post-social-btn ${isLiked ? "is-liked" : ""}`;
+      likeBtn.setAttribute("aria-pressed", String(isLiked));
+      likeBtn.innerHTML = `${iconHtml("star", "umbral-icon--sm")} <span>${isLiked ? "Te gusta" : "Me gusta"}</span>`;
+      likeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dispatchProfilePostAction("like", entry, alreadySharedNotice);
+      });
+
+      const commentBtn = document.createElement("button");
+      commentBtn.type = "button";
+      commentBtn.className = "post-social-btn";
+      commentBtn.innerHTML = `${iconHtml("chat", "umbral-icon--sm")} <span>${comments.length > 0 ? `Comentar (${comments.length})` : "Comentar"}</span>`;
+      commentBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dispatchProfilePostAction("comment", entry, alreadySharedNotice);
+      });
+
+      const shareBtn = document.createElement("button");
+      shareBtn.type = "button";
+      shareBtn.className = `post-social-btn ${alreadyShared ? "is-shared" : ""}`;
+      shareBtn.innerHTML = `${iconHtml("megaphone", "umbral-icon--sm")} <span>${alreadyShared ? `Compartido (${shares.length})` : shares.length > 0 ? `Compartir (${shares.length})` : "Compartir"}</span>`;
+      shareBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (alreadyShared) {
+          alreadySharedNotice.style.display = "block";
+          alreadySharedNotice.textContent = "Ya compartiste esta publicación anteriormente.";
+        }
+        dispatchProfilePostAction("share", entry, alreadySharedNotice);
+      });
+
+      actionsBar.append(likeBtn, commentBtn, shareBtn);
+
+      const wrap = document.createElement("div");
+      wrap.append(statsRow, actionsBar, alreadySharedNotice);
+      return wrap;
+    };
+
+    const buildStoryReservationBlockForProfile = (story) => {
+      const me = getCurrentUser() || currentUser;
+      const activeRes = getActiveStoryReservation(story);
+      const wrap = document.createElement("div");
+      wrap.className = "umbral-reservation-box";
+
+      if (activeRes) {
+        const statusRow = document.createElement("div");
+        statusRow.className = "umbral-reservation-status";
+        statusRow.append(
+          iconEl("bookmark", "umbral-icon--sm"),
+          document.createTextNode(`En producción por ${activeRes.creatorName}`)
+        );
+        if (isUserVerifiedCreator(activeRes.creatorId, activeRes.creatorName, true)) {
+          statusRow.appendChild(buildVerifiedBadgeEl());
+        }
+        const dateNote = document.createElement("small");
+        dateNote.textContent = ` · Reservado el ${activeRes.reservedDateLabel}`;
+        statusRow.appendChild(dateNote);
+        wrap.appendChild(statusRow);
+
+        const creatorInfo = resolveUserInfo(activeRes.creatorId, activeRes.creatorName);
+        const promoRow = buildPromoLinksEl(
+          creatorInfo.promoLinks || activeRes.promoLinks || {},
+          `Canales de ${activeRes.creatorName}:`
+        );
+        if (promoRow) wrap.appendChild(promoRow);
+
+        if (isCreatorUser(me) && activeRes.creatorId === me.id) {
+          const dlBtn = document.createElement("button");
+          dlBtn.type = "button";
+          dlBtn.className = "umbral-download-script-btn";
+          setButtonContent(dlBtn, "download", "Descargar guion (.txt)");
+          dlBtn.addEventListener("click", () => downloadStoryScriptTxt(story));
+          wrap.appendChild(dlBtn);
+        }
+      } else if (isCreatorUser(me)) {
+        const resBtn = document.createElement("button");
+        resBtn.type = "button";
+        resBtn.className = "umbral-reserve-btn";
+        setButtonContent(resBtn, "bookmark", "Reservar relato (7 días)");
+        resBtn.addEventListener("click", () => {
+          const result = reserveStoryRecord(story.id, me);
+          if (!result.ok) {
+            alert(result.error);
+            return;
+          }
+          renderProfileView();
+        });
+        wrap.appendChild(resBtn);
+      }
+
+      return wrap.children.length > 0 ? wrap : null;
+    };
+
     const buildSavedPostSection = (sectionTitle, iconName, items, emptyText, isSharedList = false) => {
       const sec = document.createElement("div");
       sec.className = "profile-wall-section";
@@ -888,38 +1737,84 @@ if (profilePageRoot) {
         return sec;
       }
 
-      items.forEach((entry) => {
+      const orderedItems = isSharedList
+        ? [...items].sort(
+            (a, b) =>
+              (Number(b.shareMeta?.[profileData.id]?.sharedAtTs) || 0) -
+              (Number(a.shareMeta?.[profileData.id]?.sharedAtTs) || 0)
+          )
+        : items;
+
+      orderedItems.forEach((entry) => {
         const card = document.createElement("article");
-        card.className = "story-card";
+        card.className = `story-card ${entry.isVipCall ? "is-vip-call" : ""}`;
 
         const isCreatorPost = entry._kind === "creator";
+        const originalOwner = isCreatorPost
+          ? entry.channel || "Creador"
+          : entry.author || "Narrador";
+        const shareMetaEntry = entry.shareMeta?.[profileData.id] || {};
+        const shareStamp = formatProfileShareStamp(shareMetaEntry);
+
+        if (isSharedList) {
+          const shareBanner = document.createElement("div");
+          shareBanner.style.cssText =
+            "display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.4rem;padding:0.42rem 0.68rem;margin-bottom:0.55rem;border-radius:9px;background:rgba(139,92,246,0.12);border:1px solid rgba(167,139,250,0.28);font-size:0.82rem;color:#ddd6fe;";
+
+          const whoBox = document.createElement("span");
+          whoBox.textContent = `Compartido por ${profileData.username} · Original de ${originalOwner}`;
+
+          const whenBox = document.createElement("span");
+          whenBox.style.cssText = "color:#a5b4fc;font-weight:600;font-size:0.78rem;";
+          whenBox.textContent = shareStamp;
+
+          shareBanner.append(whoBox, whenBox);
+          card.appendChild(shareBanner);
+        }
+
         const heading = document.createElement("h4");
         heading.textContent = isCreatorPost
-          ? `${entry.type || "Publicación de creador"} · ${entry.channel || "Creador"}`
+          ? `${entry.type || "Publicación de creador"} · ${originalOwner}`
           : entry.title || "Relato";
 
         const meta = document.createElement("div");
         meta.className = "story-meta";
-        meta.textContent = isCreatorPost
-          ? `Creador: ${entry.channel || "Creador"} · ${entry.network || ""}`
-          : `Por ${entry.author || "Narrador"} · ${entry.category || ""}`;
+        meta.style.cssText = "display:inline-flex;align-items:center;gap:0.35rem;flex-wrap:wrap;";
+        meta.append(document.createTextNode(`Original de: ${originalOwner}`));
+        if (isUserVerifiedCreator(entry.authorId, originalOwner, isCreatorPost)) {
+          meta.appendChild(buildVerifiedBadgeEl());
+        }
+        meta.append(
+          document.createTextNode(
+            isCreatorPost
+              ? entry.network ? ` · ${entry.network}` : ""
+              : entry.category ? ` · ${entry.category}` : ""
+          )
+        );
 
         const body = document.createElement("p");
         body.textContent = isCreatorPost ? entry.message || "" : entry.content || "";
 
         card.append(heading, meta, body);
 
-        if (isSharedList && entry.shareMeta?.[profileData.id]?.note) {
+        if (!isCreatorPost) {
+          const resBlock = buildStoryReservationBlockForProfile(entry);
+          if (resBlock) card.appendChild(resBlock);
+        }
+
+        if (isSharedList && shareMetaEntry?.note) {
           const noteEl = document.createElement("p");
           noteEl.style.cssText = "color:#c4b5fd;font-size:0.85rem;margin-top:0.4rem;";
-          noteEl.textContent = `Nota al compartir (${entry.shareMeta[profileData.id].visibility || "Público"}): “${entry.shareMeta[profileData.id].note}”`;
+          noteEl.textContent = `Nota al compartir (${shareMetaEntry.visibility || "Público"} · ${shareStamp}): “${shareMetaEntry.note}”`;
           card.appendChild(noteEl);
         }
+
+        card.appendChild(buildPostSocialBlock(entry));
 
         const openBtn = document.createElement("button");
         openBtn.type = "button";
         openBtn.className = "btn-mini";
-        openBtn.style.marginTop = "0.5rem";
+        openBtn.style.marginTop = "0.65rem";
         openBtn.textContent = "Ver en el muro";
         openBtn.addEventListener("click", () => {
           const tabParam = isCreatorPost ? "creators-view" : "stories-view";
@@ -945,13 +1840,16 @@ if (profilePageRoot) {
       container.innerHTML = "";
       profilePageRoot.querySelector(".narrator-creators-floating-box")?.remove();
 
+      const freshStories = loadData(STORAGE_KEYS.stories, []);
       const meNow = getCurrentUser() || currentUser;
-      const isCreator = profileData.role === "creador";
-      const userStories = allStories.filter(
+      const isCreator = isCreatorUser(profileData.role);
+      const userStories = freshStories.filter(
         (s) =>
           (s.authorId && s.authorId === profileData.id) ||
           (s.author || "").toLowerCase() === profileData.username.toLowerCase()
       );
+
+      syncPlanSimulationButton();
 
       const follows = loadData(STORAGE_KEYS.follows, []);
       const followerRecords = follows.filter((f) => f.targetKey === profileData.id);
@@ -1002,7 +1900,11 @@ if (profilePageRoot) {
 
       const infoWrap = document.createElement("div");
       const nameEl = document.createElement("h2");
-      nameEl.textContent = profileData.username;
+      nameEl.style.cssText = "display:inline-flex;align-items:center;gap:0.4rem;flex-wrap:wrap;";
+      nameEl.appendChild(document.createTextNode(profileData.username));
+      if (isCreator) {
+        nameEl.appendChild(buildVerifiedBadgeEl("Creador Suscrito Verificado"));
+      }
 
       const handleRow = document.createElement("div");
       handleRow.className = "profile-handle-row";
@@ -1015,11 +1917,11 @@ if (profilePageRoot) {
       roleEl.style.cssText =
         "color:#9aa2b8;font-size:0.86rem;display:inline-flex;align-items:center;gap:0.3rem;";
       roleEl.append(
-        iconEl(isCreator ? "film" : "quill", "umbral-icon--sm"),
+        iconEl(isCreator ? "crown" : "quill", "umbral-icon--sm"),
         document.createTextNode(
           isCreator
-            ? `Creador${profileData.channel ? ` · ${profileData.channel}` : ""}`
-            : "Narrador"
+            ? `Creador Suscrito${profileData.channel ? ` · ${profileData.channel}` : ""}`
+            : "Usuario Estándar (Narrador)"
         )
       );
 
@@ -1029,11 +1931,21 @@ if (profilePageRoot) {
       header.appendChild(avatarGroup);
 
       if (isOwnProfile) {
+        const headerActions = document.createElement("div");
+        headerActions.style.cssText = "display:flex;flex-wrap:wrap;gap:0.45rem;align-items:center;";
+
+        const subLink = document.createElement("a");
+        subLink.href = "suscripcion.html";
+        subLink.className = "edit-profile-link";
+        subLink.innerHTML = `${iconHtml("crown", "umbral-icon--sm umbral-icon--accent")} <span>${isCreator ? "Mi suscripción VIP" : "1er mes gratis Beta"}</span>`;
+
         const editLink = document.createElement("a");
         editLink.href = "editar-perfil.html";
         editLink.className = "edit-profile-link";
         editLink.innerHTML = `${iconHtml("edit", "umbral-icon--sm")} <span>Editar perfil</span>`;
-        header.appendChild(editLink);
+
+        headerActions.append(subLink, editLink);
+        header.appendChild(headerActions);
       }
 
       const actionsRow = document.createElement("div");
@@ -1164,10 +2076,9 @@ if (profilePageRoot) {
         followDrawer.appendChild(drawerHeader);
 
         const listTypeLabel = activeListTab === "followers" ? "seguidores" : "seguidos";
-        const subjectLabel =
-          profileData.role === "creador"
-            ? `Este creador ocultó su lista de ${listTypeLabel}`
-            : `El usuario ocultó su lista de ${listTypeLabel}`;
+        const subjectLabel = isCreator
+          ? `Este creador ocultó su lista de ${listTypeLabel}`
+          : `El usuario ocultó su lista de ${listTypeLabel}`;
 
         const listItemsWrap = document.createElement("div");
         listItemsWrap.className = "follow-list-items";
@@ -1290,19 +2201,40 @@ if (profilePageRoot) {
         wallSection.appendChild(emptyWall);
       } else {
         userStories.forEach((story) => {
+          const inEarlyAccess = isStoryInEarlyAccess(story);
+          const lockedForViewer = inEarlyAccess && !isCreatorUser(meNow) && story.authorId !== meNow.id;
+
+          if (lockedForViewer) {
+            const lockedCard = document.createElement("article");
+            lockedCard.className = "story-card umbral-vault-locked-card";
+            lockedCard.innerHTML = `
+              <div class="umbral-vault-lock-head">
+                <span class="umbral-vault-lock-icon">${iconHtml("lock", "umbral-icon--sm")}</span>
+                <strong>Relato en Bóveda de Acceso Anticipado (24h)</strong>
+              </div>
+              <p class="umbral-vault-lock-desc">
+                Este relato acaba de publicarse (${getEarlyAccessRemainingText(story)}) y está reservado para cuentas <strong>Creador Suscrito</strong>.
+              </p>
+              <a href="suscripcion.html" class="umbral-unlock-cta-link" data-transition-text="Abriendo Suscripción Beta...">
+                <span>Activar 1er mes gratis (Beta)</span>
+              </a>
+            `;
+            wallSection.appendChild(lockedCard);
+            return;
+          }
+
           const card = document.createElement("article");
           card.className = "story-card";
 
           const titleEl = document.createElement("h4");
           titleEl.textContent = story.title;
 
+          const reading = estimateReadingTime(story.content || "");
           const metaEl = document.createElement("div");
           metaEl.className = "story-meta";
-          metaEl.style.display = "inline-flex";
-          metaEl.style.alignItems = "center";
-          metaEl.style.gap = "0.3rem";
+          metaEl.style.cssText = "display:inline-flex;align-items:center;gap:0.35rem;flex-wrap:wrap;";
           metaEl.append(
-            document.createTextNode(`${story.category} · `),
+            document.createTextNode(`${story.category} · ~${reading.minutesRounded} min (${reading.words} pal.) · `),
             iconEl(story.allowCreators ? "mic" : "lock", "umbral-icon--sm"),
             document.createTextNode(
               story.allowCreators ? "Abierto a creadores" : "Solo lectura"
@@ -1313,6 +2245,11 @@ if (profilePageRoot) {
           contentEl.textContent = story.content;
 
           card.append(titleEl, metaEl, contentEl);
+
+          const reservationBlock = buildStoryReservationBlockForProfile(story);
+          if (reservationBlock) card.appendChild(reservationBlock);
+
+          card.appendChild(buildPostSocialBlock({ ...story, _kind: "story" }));
           wallSection.appendChild(card);
         });
       }
@@ -1351,6 +2288,10 @@ if (profilePageRoot) {
         );
         children.push(socialEl);
       }
+      if (isCreator) {
+        const promoBlock = buildPromoLinksEl(profileData.promoLinks || {}, "Canales oficiales:");
+        if (promoBlock) children.push(promoBlock);
+      }
       children.push(stats, followDrawer, wallSection, likedSection, sharedSection);
       container.append(...children);
 
@@ -1371,6 +2312,10 @@ if (profilePageRoot) {
         }
       }
     };
+
+    document.addEventListener("umbral:feed-updated", () => {
+      renderProfileView();
+    });
 
     renderProfileView();
   }

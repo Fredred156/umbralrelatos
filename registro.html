@@ -49,12 +49,12 @@
         </span>
         <span>Crear cuenta</span>
       </h1>
-      <p class="auth-subtitle">Únete como narrador o creador de contenido</p>
+      <p class="auth-subtitle">Únete como usuario estándar o creador de contenido</p>
 
       <aside class="umbral-welcome-banner" aria-label="Aviso de prueba gratuita">
-        <span class="umbral-welcome-tag">Prueba gratuita abierta</span>
+        <span class="umbral-welcome-tag">Versión Beta · Prueba gratuita abierta</span>
         <p>
-          <strong>¡Bienvenido a Umbral!</strong> Regístrate gratis y sin costo para publicar relatos, armar tu perfil y conectar con creadores desde esta versión de prueba.
+          <strong>¡Bienvenido a Umbral!</strong> Regístrate sin costo. Si eliges cuenta de <strong>Creador de contenido</strong>, tu <strong>primer mes es 100% gratis</strong> en esta versión Beta.
         </p>
       </aside>
 
@@ -70,10 +70,10 @@
         </div>
 
         <div class="field">
-          <label for="reg-role">Rol en la plataforma</label>
+          <label for="reg-role">Rol / Plan en la plataforma</label>
           <select id="reg-role">
-            <option value="usuario">Usuario / Narrador</option>
-            <option value="creador">Creador de contenido</option>
+            <option value="usuario_estandar">Usuario estándar (Narrador / Gratis)</option>
+            <option value="creador_suscrito">Creador de contenido (Suscrito · 1er mes Beta GRATIS)</option>
           </select>
         </div>
 
@@ -87,14 +87,36 @@
         </div>
 
         <div id="reg-creator-fields" class="form-grid" style="display: none;">
+          <div class="umbral-reg-beta-box">
+            <span class="umbral-beta-pill">VERSIÓN BETA · 1ER MES GRATIS ($0 USD)</span>
+            <p>
+              Al crear tu cuenta de <strong>Creador Suscrito</strong> se activa automáticamente tu <strong>primer mes gratis ($0 USD)</strong> con insignia verificada, Bóveda 24h, Reserva de relatos por 7 días, descarga de guiones <code>.txt</code> y Convocatorias VIP. Luego podrás renovar por $9.99 USD/mes o cambiar a plan gratuito cuando quieras.
+            </p>
+          </div>
+
           <div class="field">
             <label for="reg-channel">Nombre de canal o proyecto</label>
             <input id="reg-channel" type="text" placeholder="Ej. Glitch Core / YouTube" />
           </div>
 
           <div class="field">
-            <label for="reg-socials">Redes sociales o enlaces</label>
-            <input id="reg-socials" type="text" placeholder="Ej. TikTok, YouTube, X..." />
+            <label for="reg-socials">Redes sociales o descripción</label>
+            <input id="reg-socials" type="text" placeholder="Ej. TikTok, YouTube, Spotify..." />
+          </div>
+
+          <div class="field">
+            <label for="reg-youtube">Enlace de YouTube (opcional)</label>
+            <input id="reg-youtube" type="text" placeholder="https://youtube.com/@tu_canal" />
+          </div>
+
+          <div class="field">
+            <label for="reg-tiktok">Enlace de TikTok (opcional)</label>
+            <input id="reg-tiktok" type="text" placeholder="https://tiktok.com/@tu_usuario" />
+          </div>
+
+          <div class="field">
+            <label for="reg-spotify">Enlace de Spotify (opcional)</label>
+            <input id="reg-spotify" type="text" placeholder="https://open.spotify.com/show/..." />
           </div>
 
           <div class="field">
@@ -107,16 +129,29 @@
           </div>
         </div>
 
-        <div class="field">
-          <label for="reg-avatar-file">Foto de perfil (máx. 2 MB)</label>
+        <div class="field umbral-upload-card">
+          <label class="umbral-upload-card-head" for="reg-avatar-file">
+            <span class="umbral-upload-icon-badge" aria-hidden="true">
+              <svg class="umbral-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+            </span>
+            <span class="umbral-upload-card-meta">
+              <strong>Foto de perfil</strong>
+              <small>Elige tu avatar y arrastra para encuadrar · Máx. 2 MB</small>
+            </span>
+          </label>
           <input id="reg-avatar-file" type="file" accept="image/*" />
 
           <div id="reg-crop-stage" class="avatar-crop-stage" style="display: none;">
             <img id="reg-crop-img" alt="Vista previa de recorte de perfil" />
           </div>
 
-          <div class="field" style="display: none;">
-            <label for="reg-zoom-range">Zoom / encuadre (arrastra la foto para centrar)</label>
+          <div class="field umbral-zoom-box" style="display: none;">
+            <label class="umbral-zoom-label" for="reg-zoom-range">
+              <span class="umbral-icon umbral-icon--sm umbral-icon--accent" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path><path d="M11 8v6"></path><path d="M8 11h6"></path></svg>
+              </span>
+              <span>Zoom / encuadre (arrastra la foto para centrar)</span>
+            </label>
             <input
               id="reg-zoom-range"
               type="range"
@@ -128,8 +163,16 @@
           </div>
         </div>
 
-        <div class="field">
-          <label for="reg-banner-file">Foto de banner (opcional, máx. 2 MB)</label>
+        <div class="field umbral-upload-card">
+          <label class="umbral-upload-card-head" for="reg-banner-file">
+            <span class="umbral-upload-icon-badge" aria-hidden="true">
+              <svg class="umbral-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"></rect><circle cx="8.5" cy="9.5" r="1.5"></circle><path d="m21 16-4.5-4.5L7 20"></path></svg>
+            </span>
+            <span class="umbral-upload-card-meta">
+              <strong>Foto de banner (opcional)</strong>
+              <small>Portada oscura para tu perfil · Máx. 2 MB</small>
+            </span>
+          </label>
           <input id="reg-banner-file" type="file" accept="image/*" />
           <div id="reg-banner-preview" class="banner-upload-preview">
             <img id="reg-banner-img" alt="Vista previa del banner" />

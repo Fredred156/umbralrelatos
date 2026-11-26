@@ -18,7 +18,19 @@
     </a>
 
     <div class="prf-topbar-actions">
-      <!-- 1. Círculo: Chat de acuerdos (lista desplegable de usuarios / creadores) -->
+      <button
+        type="button"
+        class="umbral-plan-sim-btn"
+        id="prf-simulate-plan-btn"
+        title="Alternar entre usuario_estandar y creador_suscrito"
+      >
+        <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2-9 4.5 4L12 5l2.5 7L19 8l2 9Z"></path><path d="M4 20h16"></path></svg>
+        </span>
+        <span id="prf-simulate-plan-label">Simular Suscripción Creador</span>
+      </button>
+
+      <!-- 1. Círculo: Chat de acuerdos -->
       <div class="prf-circle-wrap" id="prf-chat-wrap">
         <button
           type="button"
@@ -89,6 +101,19 @@
             <h3>Configuración de perfil</h3>
           </div>
 
+          <a
+            href="suscripcion.html"
+            class="prf-action-row"
+            style="text-decoration: none;"
+            data-transition-text="Abriendo Suscripción Beta..."
+          >
+            <span>
+              <strong>Suscripción Creador VIP</strong>
+              <small>Gestiona tu plan y tu 1er mes gratis Beta</small>
+            </span>
+            <span class="prf-pill">VIP</span>
+          </a>
+
           <button type="button" class="prf-action-row" id="prf-toggle-follow-list">
             <span>
               <strong>Listas de seguidores visibles</strong>
@@ -107,7 +132,7 @@
 
           <button type="button" class="prf-action-row" id="prf-go-edit-profile">
             <span>
-              <strong>Editar datos, avatar o banner</strong>
+              <strong>Editar datos, enlaces, avatar o banner</strong>
               <small>Abre el editor completo de tu perfil</small>
             </span>
             <span class="prf-pill">Abrir</span>
@@ -161,6 +186,162 @@
         <button type="submit" class="btn-primary chat-send-btn">
           <span>Enviar</span>
         </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de compartir publicación -->
+  <div class="modal-backdrop" id="share-post-modal" aria-hidden="true">
+    <div
+      class="modal-card share-post-modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="share-post-modal-title"
+    >
+      <div class="modal-header">
+        <h3 id="share-post-modal-title">Compartir</h3>
+        <button type="button" class="icon-close" id="close-share-post-btn" aria-label="Cerrar compartir">
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </span>
+        </button>
+      </div>
+
+      <div class="share-post-body">
+        <div class="share-user-bar">
+          <span class="fb-mini-rail-avatar" id="share-modal-avatar">U</span>
+          <div class="share-user-meta">
+            <strong id="share-modal-username">Usuario</strong>
+            <div class="share-scope-row">
+              <span class="share-chip-pill">Perfil</span>
+              <div class="select-wrapper share-privacy-select-wrap">
+                <select id="share-privacy-select" aria-label="Visibilidad al compartir">
+                  <option value="Público">Público</option>
+                  <option value="Seguidores">Seguidores</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form id="share-post-form" class="share-post-form">
+          <textarea
+            id="share-comment-input"
+            rows="2"
+            placeholder="Haz un comentario..."
+          ></textarea>
+          <p class="share-status-note" id="share-modal-status"></p>
+          <div class="share-submit-row">
+            <button type="submit" class="btn-primary share-now-btn" id="share-now-btn">
+              <span>Compartir ahora</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="share-section-block">
+          <div class="share-section-title">Enviar por chat de acuerdos</div>
+          <div id="share-contacts-row" class="share-contacts-row"></div>
+        </div>
+
+        <div class="share-section-block">
+          <div class="share-section-title">Compartir en</div>
+          <div class="share-targets-grid" id="share-targets-grid">
+            <button type="button" class="share-target-btn" data-share-target="perfil">
+              <span class="share-target-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 20a8 8 0 0 1 16 0"></path></svg>
+              </span>
+              <span>Tu perfil</span>
+            </button>
+
+            <button type="button" class="share-target-btn" data-share-target="acuerdos">
+              <span class="share-target-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4l2.2-3.3A8 8 0 1 1 21 12Z"></path></svg>
+              </span>
+              <span>Acuerdos</span>
+            </button>
+
+            <button type="button" class="share-target-btn" data-share-target="copiar">
+              <span class="share-target-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              </span>
+              <span>Copiar enlace</span>
+            </button>
+
+            <button type="button" class="share-target-btn" data-share-target="creadores">
+              <span class="share-target-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-5v12L3 13v-2Z"></path><path d="M17 9a3 3 0 0 1 0 6"></path></svg>
+              </span>
+              <span>Creadores</span>
+            </button>
+
+            <button type="button" class="share-target-btn" data-share-target="relatos">
+              <span class="share-target-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8"></path></svg>
+              </span>
+              <span>Relatos</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de detalle y comentarios de publicación -->
+  <div class="modal-backdrop" id="post-detail-modal" aria-hidden="true">
+    <div
+      class="modal-card post-detail-modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="post-detail-modal-title"
+    >
+      <div class="modal-header">
+        <h3 id="post-detail-modal-title">Publicación</h3>
+        <button type="button" class="icon-close" id="close-post-detail-btn" aria-label="Cerrar publicación">
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </span>
+        </button>
+      </div>
+
+      <div id="post-detail-body" class="post-detail-scroll-body"></div>
+
+      <form id="post-comment-form" class="post-comment-composer">
+        <div id="post-comment-attachment-preview" class="post-comment-attachment-preview"></div>
+        <div class="post-comment-input-row">
+          <input
+            type="file"
+            id="post-comment-file"
+            accept="image/*,video/*"
+            class="is-hidden"
+          />
+          <button
+            type="button"
+            class="post-clip-btn"
+            id="post-comment-clip-btn"
+            aria-label="Adjuntar imagen o video"
+            title="Adjuntar imagen o video"
+          >
+            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+            </span>
+          </button>
+          <input
+            type="text"
+            id="post-comment-input"
+            placeholder="Escribe un comentario..."
+            autocomplete="off"
+          />
+          <button
+            type="submit"
+            class="post-comment-send-btn"
+            aria-label="Enviar comentario"
+            title="Enviar comentario"
+          >
+            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
+            </span>
+          </button>
+        </div>
       </form>
     </div>
   </div>

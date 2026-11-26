@@ -58,6 +58,18 @@
             </span>
             <span>Acuerdos y chat</span>
           </button>
+          <a href="suscripcion.html" class="fb-menu-item" role="menuitem" data-transition-text="Abriendo Suscripción Creador...">
+            <span class="umbral-icon umbral-icon--sm umbral-icon--accent" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2-9 4.5 4L12 5l2.5 7L19 8l2 9Z"></path><path d="M4 20h16"></path></svg>
+            </span>
+            <span>Suscripción Creador (1er mes gratis)</span>
+          </a>
+          <button type="button" class="fb-menu-item" id="menu-simulate-plan-btn" role="menuitem">
+            <span class="umbral-icon umbral-icon--sm umbral-icon--accent" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.5 3 4 5.2 4 8a4 4 0 1 1-8 0c0-1.7.7-3.2 2-4.8-.2 2 .8 3.2 2 3.2 1.1 0 2-.9 2-2.2 0-1.6-.8-2.9-2-4.2Z"></path></svg>
+            </span>
+            <span id="menu-simulate-plan-label">Simular Suscripción Creador</span>
+          </button>
 
           <hr class="fb-menu-divider" />
 
@@ -95,6 +107,17 @@
       <button
         type="button"
         class="fb-nav-tab tab-btn is-hidden"
+        id="vault-tab-btn"
+        data-tab="vault-view"
+      >
+        <span class="umbral-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.4-2"></path></svg>
+        </span>
+        <span class="fb-nav-label">Bóveda Creadores</span>
+      </button>
+      <button
+        type="button"
+        class="fb-nav-tab tab-btn is-hidden"
         id="creators-tab-btn"
         data-tab="creators-view"
       >
@@ -106,6 +129,25 @@
     </nav>
 
     <div class="fb-topbar-right">
+      <button
+        type="button"
+        class="umbral-plan-sim-btn"
+        id="simulate-plan-btn"
+        title="Alternar entre usuario_estandar y creador_suscrito"
+      >
+        <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2-9 4.5 4L12 5l2.5 7L19 8l2 9Z"></path><path d="M4 20h16"></path></svg>
+        </span>
+        <span id="simulate-plan-btn-label">Simular Suscripción Creador</span>
+      </button>
+
+      <span id="vip-alert-indicator" class="umbral-vip-indicator is-hidden" title="Convocatoria VIP activa">
+        <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2-9 4.5 4L12 5l2.5 7L19 8l2 9Z"></path><path d="M4 20h16"></path></svg>
+        </span>
+        <span>VIP</span>
+      </span>
+
       <span id="session-status" class="session-chip">Cargando sesión...</span>
 
       <div class="notif-dropdown-wrap" id="notif-dropdown-wrap">
@@ -190,7 +232,7 @@
           <button type="button" class="fb-settings-row" id="setting-reset-feed">
             <span class="fb-settings-meta">
               <strong>Restablecer vista del muro</strong>
-              <small>Limpia el filtro de búsqueda y vuelve a Relatos</small>
+              <small>Limpia los filtros de búsqueda y vuelve a Relatos</small>
             </span>
           </button>
         </div>
@@ -200,15 +242,12 @@
     </div>
   </header>
 
-  <!-- Barra compacta secundaria (mantenida para compatibilidad de scripts/estilos) -->
   <div id="compact-scroll-bar" class="compact-scroll-bar" aria-hidden="true">
     <span id="compact-section-label">Muro de Relatos</span>
     <span id="compact-role-badge"></span>
   </div>
 
-  <!-- Layout principal de 3 columnas -->
   <div class="fb-shell">
-    <!-- Columna izquierda -->
     <aside class="fb-sidebar-left" aria-label="Accesos rápidos">
       <a href="perfil.html" class="fb-left-user-row">
         <span class="fb-mini-rail-avatar" id="left-rail-avatar">U</span>
@@ -220,6 +259,18 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8"></path><path d="M8 4v4H4"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg>
         </span>
         <span>Muro de relatos</span>
+      </button>
+
+      <button
+        type="button"
+        class="fb-rail-btn is-hidden"
+        id="rail-vault-btn"
+        data-rail-tab="vault-view"
+      >
+        <span class="umbral-icon umbral-icon--sm umbral-icon--accent" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.4-2"></path></svg>
+        </span>
+        <span>Bóveda Creadores (24h)</span>
       </button>
 
       <button
@@ -248,180 +299,190 @@
         <span>Editar perfil</span>
       </a>
 
+      <a
+        href="suscripcion.html"
+        class="fb-rail-btn umbral-rail-vip-link"
+        data-transition-text="Abriendo Suscripción Beta..."
+      >
+        <span class="umbral-icon umbral-icon--sm umbral-icon--accent" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2-9 4.5 4L12 5l2.5 7L19 8l2 9Z"></path><path d="M4 20h16"></path></svg>
+        </span>
+        <span>Suscripción VIP · 1er mes gratis</span>
+      </a>
+
       <div class="fb-rail-footer">
-        Umbral · Relatos reales y acuerdos claros entre autores y creadores.
+        Umbral · Relatos reales, Bóveda 24h y acuerdos claros entre autores y creadores.
       </div>
     </aside>
 
-    <!-- Columna central -->
     <main class="fb-feed-center">
-      <!-- Caja rápida superior compartida -->
       <div class="fb-quick-box" id="creator-composer-box">
-        <div class="fb-quick-top">
-          <span class="fb-mini-rail-avatar" id="quick-composer-avatar">U</span>
+        <!-- Barra rápida estilo Facebook -->
+        <div class="umbral-composer-bar" id="umbral-quick-composer-bar">
+          <span class="umbral-composer-avatar" id="umbral-quick-avatar">U</span>
           <button
             type="button"
-            class="fb-create-story-btn"
-            id="toggle-composer"
-            aria-expanded="false"
-            aria-controls="composer-drawer"
+            class="umbral-composer-trigger"
+            id="umbral-open-post-modal-btn"
           >
-            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4c-6 0-12 4-14 11l-2 5 5-2c7-2 11-8 11-14Z"></path><path d="m14 10-8 8"></path></svg>
-            </span>
-            <span>Crear relato y opciones</span>
+            ¿Qué sombra o relato ronda tu mente hoy?
           </button>
-          <button
-            type="button"
-            class="fb-create-story-btn is-hidden"
-            id="toggle-creator-composer"
-            aria-expanded="false"
-            aria-controls="creator-drawer"
-          >
-            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 5v14"></path><path d="M17 5v14"></path><path d="M3 10h4"></path><path d="M17 10h4"></path><path d="M3 14h4"></path><path d="M17 14h4"></path></svg>
-            </span>
-            <span>Publicar novedad o video</span>
-          </button>
+          <div class="umbral-composer-quick-actions" aria-label="Accesos rápidos de creación">
+            <button
+              type="button"
+              class="umbral-quick-icon-btn"
+              id="umbral-quick-video-btn"
+              title="Subir video o novedad"
+              aria-label="Subir video o novedad"
+            >
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="15" height="14" rx="2"></rect><path d="m17 10 5-3v10l-5-3Z"></path></svg>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="umbral-quick-icon-btn"
+              id="umbral-quick-media-btn"
+              title="Subir imagen"
+              aria-label="Subir imagen"
+            >
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.5-3.5L9 20"></path></svg>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="umbral-quick-icon-btn"
+              id="umbral-quick-mood-btn"
+              title="Estado de ánimo de terror"
+              aria-label="Estado de ánimo de terror"
+            >
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+              </span>
+            </button>
+          </div>
         </div>
 
+        <!-- Inputs ocultos para subir foto o clip desde los accesos rápidos o formularios -->
+        <input type="file" id="story-image-file" accept="image/*" class="is-hidden" />
+        <input type="file" id="story-video-file" accept="video/*" class="is-hidden" />
+        <input type="file" id="creator-media-image" accept="image/*" class="is-hidden" />
+        <input type="file" id="creator-media-video" accept="video/*" class="is-hidden" />
+
+        <!-- Formularios ocultos de respaldo para compatibilidad interna -->
         <div id="composer-drawer" class="composer-drawer" aria-hidden="true">
           <form id="story-form">
-            <p class="fb-explicit-warning">
-              <span class="umbral-icon umbral-icon--sm umbral-icon--danger" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-              </span>
-              <span>Comparte experiencias reales o anécdotas genuinas de forma responsable.</span>
-            </p>
-
-            <label class="field-label" for="title">Título del relato</label>
-            <input
-              type="text"
-              id="title"
-              placeholder="Ej. Pasos en el pasillo a las 3:00 AM"
-              required
-            />
-
-            <label class="field-label" for="author">Tu apodo o nombre de autor</label>
-            <input
-              type="text"
-              id="author"
-              placeholder="Tu apodo"
-              required
-            />
-
-            <label class="field-label" for="category">Categoría</label>
-            <div class="select-wrapper">
-              <select id="category">
-                <option value="Casa / Habitación">Casa / Habitación</option>
-                <option value="Carretera / Viaje">Carretera / Viaje</option>
-                <option value="Trabajo / Turno nocturno">Trabajo / Turno nocturno</option>
-                <option value="Infancia / Recuerdo">Infancia / Recuerdo</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </div>
-
-            <label class="field-label" for="content">Relato</label>
-            <textarea
-              id="content"
-              rows="4"
-              placeholder="Escribe tu experiencia con calma y detalle..."
-              required
-            ></textarea>
-
-            <div class="fb-media-inputs-grid">
-              <div>
-                <label class="field-label" for="story-image-file">Imagen adjunta (opcional)</label>
-                <input type="file" id="story-image-file" accept="image/*" />
-              </div>
-              <div>
-                <label class="field-label" for="story-video-file">Video adjunto (opcional)</label>
-                <input type="file" id="story-video-file" accept="video/*" />
-              </div>
-            </div>
-
-            <div id="story-media-preview" class="fb-media-preview-box"></div>
-
-            <label class="checkbox-row" for="allow-creators">
-              <input type="checkbox" id="allow-creators" checked />
-              <span>Permitir que creadores de contenido soliciten relatar esta historia</span>
-            </label>
-
-            <button type="submit" class="btn-primary" id="publish-btn">
-              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.5 3 4 5.2 4 8a4 4 0 1 1-8 0c0-1.7.7-3.2 2-4.8-.2 2 .8 3.2 2 3.2 1.1 0 2-.9 2-2.2 0-1.6-.8-2.9-2-4.2Z"></path></svg>
-              </span>
-              <span>Publicar relato</span>
-            </button>
+            <input type="text" id="title" class="is-hidden" />
+            <input type="text" id="author" class="is-hidden" />
+            <select id="category" class="is-hidden">
+              <option value="Casa / Habitación">Casa / Habitación</option>
+              <option value="Carretera / Viaje">Carretera / Viaje</option>
+              <option value="Trabajo / Turno nocturno">Trabajo / Turno nocturno</option>
+              <option value="Infancia / Recuerdo">Infancia / Recuerdo</option>
+              <option value="Paranormal">Paranormal</option>
+              <option value="Terror psicológico">Terror psicológico</option>
+              <option value="Otro">Otro</option>
+            </select>
+            <textarea id="content" class="is-hidden"></textarea>
+            <div id="story-media-preview" class="story-media-preview-box fb-media-preview-box"></div>
+            <input type="checkbox" id="allow-creators" class="is-hidden" checked />
+            <button type="submit" id="publish-btn" class="is-hidden">Publicar relato</button>
           </form>
         </div>
 
         <div id="creator-drawer" class="composer-drawer" aria-hidden="true">
           <form id="creator-post-form">
-            <label class="field-label" for="creator-channel">Nombre del canal o creador</label>
-            <input
-              type="text"
-              id="creator-channel"
-              placeholder="Nombre de tu canal"
-              required
-            />
-
-            <label class="field-label" for="creator-network">Plataforma / Red principal</label>
-            <input
-              type="text"
-              id="creator-network"
-              placeholder="Ej. YouTube, TikTok, Spotify o Podcast"
-              required
-            />
-
-            <label class="field-label" for="creator-post-type">Tipo de publicación</label>
-            <div class="select-wrapper">
-              <select id="creator-post-type">
-                <option value="Próximo video / Estreno">Próximo video / Estreno</option>
-                <option value="Búsqueda de relatos">Búsqueda de relatos</option>
-                <option value="Novedad de canal">Novedad de canal</option>
-                <option value="Dinámica con comunidad">Dinámica con comunidad</option>
-              </select>
-            </div>
-
-            <label class="field-label" for="creator-message">Mensaje, noticia o próximo contenido</label>
-            <textarea
-              id="creator-message"
-              rows="3"
-              placeholder="Comparte noticias de tus próximos videos, adelantos, novedades o qué relatos buscas..."
-              required
-            ></textarea>
-
-            <button type="submit" class="btn-primary" id="publish-creator-btn">
-              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-5v12L3 13v-2Z"></path><path d="M17 9a3 3 0 0 1 0 6"></path><path d="M7 14.5 9 20h3l-1-5.5"></path></svg>
-              </span>
-              <span>Publicar en espacio de creadores</span>
-            </button>
+            <input type="text" id="creator-channel" class="is-hidden" />
+            <input type="text" id="creator-network" class="is-hidden" />
+            <select id="creator-post-type" class="is-hidden">
+              <option value="Próximo video / Estreno">Próximo video / Estreno</option>
+              <option value="Búsqueda de relatos">Búsqueda de relatos</option>
+              <option value="Novedad de canal">Novedad de canal</option>
+              <option value="Dinámica con comunidad">Dinámica con comunidad</option>
+            </select>
+            <textarea id="creator-message" class="is-hidden"></textarea>
+            <div id="creator-media-preview" class="creator-media-preview-box"></div>
+            <p id="creator-post-error" class="form-error" style="display: none;"></p>
+            <button type="submit" id="publish-creator-btn" class="is-hidden">Publicar en espacio de creadores</button>
           </form>
         </div>
       </div>
 
-      <!-- Vista 1: Muro de relatos -->
       <section id="stories-view" class="tab-panel is-active" aria-label="Muro de relatos">
         <div class="fb-section-heading">
           <h2>Relatos recientes</h2>
         </div>
 
+        <!-- Barra de filtros avanzados -->
+        <div class="umbral-advanced-filters" id="umbral-advanced-filters" aria-label="Filtros avanzados del muro">
+          <div class="umbral-filter-field">
+            <label for="filter-reading-time">Lectura</label>
+            <select id="filter-reading-time">
+              <option value="all">Todas las duraciones</option>
+              <option value="short">Corto (≤ 1 min)</option>
+              <option value="medium">Medio (2 - 4 min)</option>
+              <option value="long">Largo (5+ min)</option>
+            </select>
+          </div>
+
+          <div class="umbral-filter-field">
+            <label for="filter-subgenre">Subgénero</label>
+            <select id="filter-subgenre">
+              <option value="all">Todos los subgéneros</option>
+              <option value="Casa / Habitación">Casa / Habitación</option>
+              <option value="Carretera / Viaje">Carretera / Viaje</option>
+              <option value="Trabajo / Turno nocturno">Trabajo / Turno nocturno</option>
+              <option value="Infancia / Recuerdo">Infancia / Recuerdo</option>
+              <option value="Paranormal">Paranormal</option>
+              <option value="Terror psicológico">Terror psicológico</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+
+          <div class="umbral-filter-field">
+            <label for="filter-story-status">Estado</label>
+            <select id="filter-story-status">
+              <option value="all">Todos los estados</option>
+              <option value="disponible">Disponible</option>
+              <option value="reservado">Reservado</option>
+            </select>
+          </div>
+
+          <button type="button" class="umbral-filter-reset-btn" id="filter-reset-btn">
+            Limpiar filtros
+          </button>
+        </div>
+
         <div id="stories-list"></div>
       </section>
 
-      <!-- Vista 2: Espacio de creadores -->
+      <!-- Pestaña Bóveda Creadores (24h Acceso Anticipado) -->
+      <section id="vault-view" class="tab-panel" aria-label="Bóveda de Creadores">
+        <div class="fb-section-heading umbral-vault-heading">
+          <h2>
+            <span class="umbral-icon umbral-icon--sm umbral-icon--accent" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.4-2"></path></svg>
+            </span>
+            <span>Bóveda Creadores · Acceso Anticipado (24h)</span>
+          </h2>
+          <p class="fb-right-muted">
+            Relatos recién publicados durante sus primeras 24 horas. Solo visibles para cuentas Creador Suscrito.
+          </p>
+        </div>
+
+        <div id="vault-stories-list"></div>
+      </section>
+
       <section id="creators-view" class="tab-panel" aria-label="Espacio de creadores">
         <div class="fb-section-heading">
-          <h2>Anuncios de creadores</h2>
+          <h2>Anuncios y Convocatorias de creadores</h2>
         </div>
 
         <div id="creator-posts-list"></div>
       </section>
     </main>
 
-    <!-- Columna derecha: Acuerdos y chat -->
     <aside class="fb-sidebar-right" aria-label="Acuerdos y chat">
       <div class="fb-right-card">
         <div class="notif-header" style="margin-bottom: 0.35rem;">
@@ -451,7 +512,245 @@
     </aside>
   </div>
 
-  <!-- Modal: Solicitar permiso para relatar -->
+  <!-- Modal "Crear publicación" -->
+  <div class="umbral-modal-backdrop" id="umbral-create-post-modal" aria-hidden="true">
+    <div
+      class="umbral-post-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="umbral-create-post-title"
+    >
+      <div class="umbral-post-modal__header">
+        <h3 class="umbral-post-modal__title" id="umbral-create-post-title">Crear publicación</h3>
+        <button
+          type="button"
+          class="umbral-modal-close"
+          id="umbral-close-post-modal-btn"
+          aria-label="Cerrar crear publicación"
+        >
+          <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </span>
+        </button>
+      </div>
+
+      <form class="umbral-post-modal__body" id="umbral-unified-post-form">
+        <div class="umbral-author-row">
+          <span class="umbral-composer-avatar" id="umbral-modal-avatar">U</span>
+          <div class="umbral-author-meta">
+            <span class="umbral-author-name" id="umbral-modal-author-name">Usuario</span>
+            <div class="umbral-meta-controls">
+              <label class="umbral-select-chip" title="Visibilidad de la publicación">
+                <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3.6 9h16.8"></path><path d="M3.6 15h16.8"></path><path d="M12 3a15.3 15.3 0 0 1 4 9 15.3 15.3 0 0 1-4 9 15.3 15.3 0 0 1-4-9 15.3 15.3 0 0 1 4-9Z"></path></svg>
+                </span>
+                <select id="umbral-post-visibility" aria-label="Público">
+                  <option value="Público">Público</option>
+                  <option value="Seguidores">Seguidores</option>
+                  <option value="Solo yo">Solo yo</option>
+                </select>
+              </label>
+
+              <label class="umbral-select-chip" title="Subgénero de terror">
+                <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.5 3 4 5.2 4 8a4 4 0 1 1-8 0c0-1.7.7-3.2 2-4.8-.2 2 .8 3.2 2 3.2 1.1 0 2-.9 2-2.2 0-1.6-.8-2.9-2-4.2Z"></path></svg>
+                </span>
+                <select id="umbral-post-subgenre" aria-label="Subgénero de terror">
+                  <option value="Casa / Habitación">Casa / Habitación</option>
+                  <option value="Carretera / Viaje">Carretera / Viaje</option>
+                  <option value="Trabajo / Turno nocturno">Trabajo / Turno nocturno</option>
+                  <option value="Infancia / Recuerdo">Infancia / Recuerdo</option>
+                  <option value="Paranormal">Paranormal</option>
+                  <option value="Terror psicológico">Terror psicológico</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </label>
+
+              <label class="umbral-select-chip" title="Etiqueta de contenido con IA">
+                <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8Z"></path><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9Z"></path></svg>
+                </span>
+                <select id="umbral-post-ai-label" aria-label="Etiqueta de IA">
+                  <option value="Etiqueta de IA desactivada">Etiqueta de IA desactivada</option>
+                  <option value="Contenido asistido con IA">Contenido asistido con IA</option>
+                  <option value="Generado con IA">Generado con IA</option>
+                </select>
+              </label>
+
+              <button
+                type="button"
+                class="umbral-novelty-slot-btn"
+                id="umbral-novelty-or-video-btn"
+              >
+                <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="15" height="14" rx="2"></rect><path d="m17 10 5-3v10l-5-3Z"></path></svg>
+                </span>
+                <span>Publicar novedad o video</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opción exclusiva de Creador Suscrito: Convocatoria VIP -->
+        <div class="umbral-vip-call-option is-hidden" id="umbral-vip-call-wrap">
+          <label class="umbral-vip-checkbox-label" for="umbral-vip-call-checkbox">
+            <input type="checkbox" id="umbral-vip-call-checkbox" />
+            <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2-9 4.5 4L12 5l2.5 7L19 8l2 9Z"></path><path d="M4 20h16"></path></svg>
+            </span>
+            <span>Marcar como <strong>Convocatoria VIP</strong> (fijada arriba y notifica a la comunidad)</span>
+          </label>
+        </div>
+
+        <div class="umbral-narrator-popover" id="umbral-narrator-creator-popover" role="region" aria-label="Acceso para creadores">
+          <h4 class="umbral-narrator-popover__title">Función exclusiva de cuenta Creador Suscrito</h4>
+          <p class="umbral-narrator-popover__desc">
+            Tu cuenta actual es <strong>usuario_estandar</strong>. Activa tu membresía de <strong>Creador Suscrito</strong> (<strong>1er mes gratis en Beta</strong>) para publicar novedades, videos largos y Convocatorias VIP.
+          </p>
+          <p class="umbral-narrator-popover__notice">
+            También puedes ir al registro de creador (cerrando sesión) o activar el pase Beta gratis directamente desde tu cuenta actual.
+          </p>
+          <div class="umbral-narrator-popover__actions">
+            <button type="button" class="umbral-btn-ghost" id="umbral-narrator-cancel-btn">
+              Cancelar
+            </button>
+            <button type="button" class="umbral-btn-ghost" id="umbral-narrator-go-register-btn">
+              Registro nuevo
+            </button>
+            <a
+              href="suscripcion.html"
+              class="umbral-btn-creator-signup"
+              style="text-decoration: none;"
+              data-transition-text="Abriendo Suscripción Beta..."
+            >
+              Activar 1er mes gratis
+            </a>
+          </div>
+        </div>
+
+        <div class="umbral-textarea-wrap" id="umbral-textarea-wrap">
+          <input
+            type="text"
+            class="umbral-modal-title-input"
+            id="umbral-unified-post-title"
+            placeholder="Título del relato o convocatoria (opcional)..."
+          />
+          <textarea
+            class="umbral-post-textarea"
+            id="umbral-unified-post-text"
+            placeholder="¿Qué estás pensando o qué suceso ocurrió?"
+          ></textarea>
+          <div id="umbral-modal-media-preview" class="story-media-preview-box fb-media-preview-box"></div>
+          <p id="umbral-video-error-msg" class="form-error" style="display: none;"></p>
+          <div class="umbral-textarea-tools">
+            <button
+              type="button"
+              class="umbral-aa-btn"
+              id="umbral-cycle-theme-btn"
+              title="Cambiar estilo visual del fondo"
+            >
+              Aa
+            </button>
+            <span class="fb-right-muted" id="umbral-video-limit-hint"></span>
+            <span class="fb-right-muted" id="umbral-active-extras-summary"></span>
+          </div>
+        </div>
+
+        <div class="umbral-add-box">
+          <span class="umbral-add-box__label">Agregar a tu publicación</span>
+          <div class="umbral-add-box__icons">
+            <button
+              type="button"
+              class="umbral-quick-icon-btn"
+              id="umbral-add-media-btn"
+              title="Foto"
+              aria-label="Foto"
+            >
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.5-3.5L9 20"></path></svg>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="umbral-quick-icon-btn"
+              id="umbral-add-video-btn"
+              title="Video"
+              aria-label="Video"
+            >
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="15" height="14" rx="2"></rect><path d="m17 10 5-3v10l-5-3Z"></path></svg>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="umbral-quick-icon-btn"
+              id="umbral-add-tag-btn"
+              title="Etiquetar personas o menciones"
+              aria-label="Etiquetar personas o menciones"
+            >
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="umbral-quick-icon-btn"
+              id="umbral-add-feeling-btn"
+              title="Estado de ánimo de terror"
+              aria-label="Estado de ánimo de terror"
+            >
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="umbral-quick-icon-btn"
+              id="umbral-add-location-btn"
+              title="Ubicación o lugar del suceso"
+              aria-label="Ubicación o lugar del suceso"
+            >
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11.5a7 7 0 0 1 14 0C19 15.7 12 21 12 21Z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="umbral-quick-icon-btn"
+              id="umbral-add-flag-btn"
+              title="Etiqueta de suceso o aviso"
+              aria-label="Etiqueta de suceso o aviso"
+            >
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="umbral-quick-icon-btn"
+              id="umbral-add-more-btn"
+              title="Más opciones"
+              aria-label="Más opciones"
+            >
+              <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="umbral-publish-submit"
+          id="umbral-submit-unified-post-btn"
+          disabled
+        >
+          Publicar
+        </button>
+      </form>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="permission-modal" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="permission-modal-title">
       <div class="modal-header">
@@ -487,7 +786,6 @@
     </div>
   </div>
 
-  <!-- Modal: Chat de acuerdo aceptado -->
   <div class="modal-backdrop" id="chat-modal" aria-hidden="true">
     <div
       class="modal-card chat-modal-card"
@@ -523,7 +821,6 @@
     </div>
   </div>
 
-  <!-- Modal: Compartir publicación estilo Facebook -->
   <div class="modal-backdrop" id="share-post-modal" aria-hidden="true">
     <div
       class="modal-card share-post-modal-card"
@@ -619,7 +916,6 @@
     </div>
   </div>
 
-  <!-- Modal: Vista ampliada de publicación, likes, compartidos y comentarios públicos -->
   <div class="modal-backdrop" id="post-detail-modal" aria-hidden="true">
     <div
       class="modal-card post-detail-modal-card"

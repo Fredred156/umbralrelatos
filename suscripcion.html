@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Umbral — Suscripción Creador (1er mes Beta Gratis)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="umbral-profile-minimal umbral-sub-page">
+  <div class="ambient-bg" aria-hidden="true"></div>
+
+  <header class="prf-topbar">
+    <a href="index.html" class="prf-brand-link" data-transition-text="Volviendo al muro...">
+      <span class="umbral-icon umbral-icon--sm umbral-icon--accent" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.5 3 4 5.2 4 8a4 4 0 1 1-8 0c0-1.7.7-3.2 2-4.8-.2 2 .8 3.2 2 3.2 1.1 0 2-.9 2-2.2 0-1.6-.8-2.9-2-4.2Z"></path></svg>
+      </span>
+      <span>UMBRAL</span>
+    </a>
+
+    <nav class="edit-topbar-nav" aria-label="Navegación de suscripción">
+      <a href="index.html" class="edit-nav-pill edit-nav-pill--ghost" data-transition-text="Volviendo al muro...">
+        <span>Ir al muro</span>
+      </a>
+      <a href="perfil.html" class="edit-nav-pill" data-transition-text="Abriendo tu perfil...">
+        <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 20a8 8 0 0 1 16 0"></path></svg>
+        </span>
+        <span>Mi perfil</span>
+      </a>
+    </nav>
+  </header>
+
+  <main class="umbral-sub-shell" id="subscription-page-root">
+    <!-- Banner de bienvenida tras crear una cuenta de creador -->
+    <section class="umbral-sub-beta-welcome is-hidden" id="sub-beta-welcome-box">
+      <div class="umbral-sub-beta-welcome-copy">
+        <span class="umbral-beta-pill">VERSIÓN BETA · PRIMER MES GRATIS</span>
+        <h2>¡Tu cuenta de Creador ha sido creada con 1 mes GRATIS!</h2>
+        <p>
+          Por estar en la etapa Beta de Umbral, tu primer mes como <strong>Creador Suscrito</strong> tiene costo de <strong>$0 USD</strong>. Ya puedes configurar tus enlaces promocionales o entrar directo al muro.
+        </p>
+      </div>
+      <a href="index.html" class="btn-primary umbral-beta-enter-btn" data-transition-text="Entrando al muro...">
+        <span>Entrar al muro ahora</span>
+      </a>
+    </section>
+
+    <!-- Hero superior -->
+    <section class="umbral-sub-hero">
+      <div class="umbral-sub-badge">
+        <span class="umbral-icon umbral-icon--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2-9 4.5 4L12 5l2.5 7L19 8l2 9Z"></path><path d="M4 20h16"></path></svg>
+        </span>
+        <span>Versión Beta · 1er Mes Gratis para Creadores</span>
+      </div>
+
+      <h1>Desbloquea la Bóveda de Terror de Umbral</h1>
+      <p class="umbral-sub-subtitle">
+        Prueba la membresía de Creador Suscrito <strong>totalmente gratis durante tu primer mes en Beta</strong>. Accede 24h antes a los relatos, reserva por 7 días, descarga guiones con licencia y fija tus Convocatorias VIP.
+      </p>
+
+      <div class="umbral-sub-status-banner" id="sub-current-status-banner">
+        <div class="umbral-sub-status-user">
+          <span class="fb-mini-rail-avatar" id="sub-user-avatar">U</span>
+          <div>
+            <strong id="sub-user-name">Cargando usuario...</strong>
+            <small id="sub-user-plan-desc">Verificando plan actual...</small>
+          </div>
+        </div>
+        <span class="umbral-sub-status-pill" id="sub-status-pill">Estándar</span>
+      </div>
+    </section>
+
+    <!-- Comparativa de planes -->
+    <section class="umbral-sub-plans-grid" aria-label="Comparativa de planes">
+      <!-- Plan Gratuito -->
+      <article class="umbral-plan-card" id="plan-card-free">
+        <div class="umbral-plan-head">
+          <span class="umbral-plan-tag">usuario_estandar</span>
+          <h2>Plan Gratuito</h2>
+          <div class="umbral-plan-price">
+            <strong>$0</strong>
+            <span>/ mes siempre</span>
+          </div>
+          <p class="umbral-plan-desc">Ideal para narradores y lectores de la comunidad.</p>
+        </div>
+
+        <ul class="umbral-plan-features">
+          <li>
+            <span class="umbral-feat-check">✓</span>
+            <span>Publicar relatos, imágenes, me gusta y comentarios</span>
+          </li>
+          <li>
+            <span class="umbral-feat-check">✓</span>
+            <span>Videos cortos de hasta 5 MB y 60 segundos</span>
+          </li>
+          <li>
+            <span class="umbral-feat-check">✓</span>
+            <span>Acceso al muro público (tras 24h de acceso anticipado)</span>
+          </li>
+          <li class="is-muted">
+            <span class="umbral-feat-lock">✕</span>
+            <span>Sin acceso a Bóveda Creadores ni Reserva de 7 días</span>
+          </li>
+          <li class="is-muted">
+            <span class="umbral-feat-lock">✕</span>
+            <span>Sin insignia de verificación ni Convocatorias VIP</span>
+          </li>
+        </ul>
+
+        <button type="button" class="btn-secondary umbral-plan-btn" id="btn-choose-free">
+          Usar plan gratuito
+        </button>
+      </article>
+
+      <!-- Plan Creador Suscrito (1er mes gratis) -->
+      <article class="umbral-plan-card is-featured" id="plan-card-creator">
+        <div class="umbral-plan-ribbon">Beta: 1er Mes Gratis</div>
+        <div class="umbral-plan-head">
+          <span class="umbral-plan-tag is-creator">creador_suscrito</span>
+          <h2>Creador Suscrito VIP</h2>
+          <div class="umbral-plan-price">
+            <strong id="sub-card-price-main">$0</strong>
+            <span id="sub-card-price-sub">1er mes (Beta) · luego $9.99/mes</span>
+          </div>
+          <p class="umbral-plan-desc">El primer mes es completamente gratis durante la versión Beta. Cancela cuando quieras.</p>
+        </div>
+
+        <ul class="umbral-plan-features">
+          <li>
+            <span class="umbral-feat-check">✓</span>
+            <span><strong>Primer mes 100% gratis</strong> ($0 USD en la versión Beta)</span>
+          </li>
+          <li>
+            <span class="umbral-feat-check">✓</span>
+            <span><strong>Insignia verificada</strong> junto a tu nombre en todo Umbral</span>
+          </li>
+          <li>
+            <span class="umbral-feat-check">✓</span>
+            <span><strong>Bóveda Creadores (24h)</strong>: lee relatos recién publicados antes que el público</span>
+          </li>
+          <li>
+            <span class="umbral-feat-check">✓</span>
+            <span><strong>Reserva exclusiva (7 días)</strong> + descarga de guion <code>.txt</code> con licencia</span>
+          </li>
+          <li>
+            <span class="umbral-feat-check">✓</span>
+            <span><strong>Videos largos</strong> de hasta 25 MB y 10 minutos de duración</span>
+          </li>
+          <li>
+            <span class="umbral-feat-check">✓</span>
+            <span><strong>Convocatorias VIP</strong> fijadas arriba con alerta para toda la comunidad</span>
+          </li>
+          <li>
+            <span class="umbral-feat-check">✓</span>
+            <span><strong>Enlaces de promoción</strong> (YouTube, TikTok, Spotify) en perfil y relatos reservados</span>
+          </li>
+        </ul>
+
+        <button type="button" class="btn-primary umbral-plan-btn" id="btn-scroll-checkout">
+          Activar 1er Mes Gratis
+        </button>
+      </article>
+    </section>
+
+    <!-- Panel de Checkout Simulado / Gestión Activa -->
+    <section class="panel umbral-sub-checkout-panel" id="sub-checkout-section">
+      <div class="umbral-checkout-header">
+        <h2 id="sub-checkout-title">Activar tu Primer Mes Gratis de Creador (Beta)</h2>
+        <p id="sub-checkout-subtitle">
+          Versión Beta: tu primer mes no tiene ningún costo ($0 USD). Configura tu canal y enlaces promocionales para activar los beneficios al instante.
+        </p>
+      </div>
+
+      <form id="subscription-checkout-form" class="umbral-checkout-form">
+        <div class="umbral-checkout-grid">
+          <div class="edit-section-card">
+            <h3 class="edit-section-title">1. Tu proyecto y enlaces de promoción</h3>
+
+            <label class="field-label" for="sub-channel-name">Nombre de tu canal o podcast</label>
+            <input
+              type="text"
+              id="sub-channel-name"
+              placeholder="Ej. Relatos de Medianoche"
+              required
+            />
+
+            <label class="field-label" for="sub-youtube-url">YouTube (opcional)</label>
+            <input
+              type="text"
+              id="sub-youtube-url"
+              placeholder="https://youtube.com/@tu_canal"
+            />
+
+            <label class="field-label" for="sub-tiktok-url">TikTok (opcional)</label>
+            <input
+              type="text"
+              id="sub-tiktok-url"
+              placeholder="https://tiktok.com/@tu_usuario"
+            />
+
+            <label class="field-label" for="sub-spotify-url">Spotify (opcional)</label>
+            <input
+              type="text"
+              id="sub-spotify-url"
+              placeholder="https://open.spotify.com/show/..."
+            />
+          </div>
+
+          <div class="edit-section-card">
+            <h3 class="edit-section-title">2. Activación y método para renovación</h3>
+
+            <div class="umbral-pay-methods" id="sub-pay-methods">
+              <label class="umbral-pay-option is-selected" id="sub-beta-free-option">
+                <input type="radio" name="pay-method" value="Pase Beta (1er Mes Gratis)" checked />
+                <span>Pase Beta · Primer mes gratis ($0 USD)</span>
+              </label>
+              <label class="umbral-pay-option">
+                <input type="radio" name="pay-method" value="Tarjeta (Simulada)" />
+                <span>Tarjeta de crédito / débito (Simulada)</span>
+              </label>
+              <label class="umbral-pay-option">
+                <input type="radio" name="pay-method" value="PayPal (Simulado)" />
+                <span>PayPal (Simulado)</span>
+              </label>
+            </div>
+
+            <div id="sub-beta-free-info" class="umbral-beta-free-info">
+              No necesitas tarjeta para probar el primer mes en la versión Beta. Tu acceso VIP dura 30 días sin costo.
+            </div>
+
+            <div id="sub-card-fields" class="umbral-sub-method-fields is-hidden">
+              <label class="field-label" for="sub-card-number">Tarjeta de prueba</label>
+              <input
+                type="text"
+                id="sub-card-number"
+                value="4242 •••• •••• 4242"
+                autocomplete="off"
+              />
+
+              <div class="umbral-card-split">
+                <div>
+                  <label class="field-label" for="sub-card-exp">Vencimiento</label>
+                  <input type="text" id="sub-card-exp" value="12/28" autocomplete="off" />
+                </div>
+                <div>
+                  <label class="field-label" for="sub-card-cvc">CVC</label>
+                  <input type="text" id="sub-card-cvc" value="666" autocomplete="off" />
+                </div>
+              </div>
+            </div>
+
+            <div class="umbral-checkout-summary">
+              <div>
+                <span id="sub-summary-label">Total hoy (1er mes Beta)</span>
+                <strong id="sub-summary-price">$0.00 USD</strong>
+              </div>
+              <small id="sub-billing-note">
+                Después del 1er mes gratis: $9.99 USD/mes (simulado) · Cancela cuando quieras.
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <p id="sub-form-feedback" class="umbral-sub-feedback" style="display: none;"></p>
+
+        <div class="umbral-checkout-actions">
+          <button
+            type="button"
+            class="btn-block-user is-hidden"
+            id="sub-cancel-plan-btn"
+          >
+            Cancelar suscripción (volver a usuario_estandar)
+          </button>
+
+          <button type="submit" class="btn-primary umbral-horror-submit" id="sub-submit-btn">
+            <span>Activar 1er Mes Gratis (Creador Suscrito)</span>
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div id="umbral-transition" class="umbral-transition-overlay" aria-hidden="true">
+    <div class="umbral-loader-ring"></div>
+    <p id="umbral-transition-text" class="umbral-loader-label">Cargando suscripción...</p>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="transition.js"></script>
+  <script src="storage.js"></script>
+  <script src="suscripcion.js"></script>
+</body>
+</html>

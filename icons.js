@@ -25,7 +25,15 @@
     check: `<svg ${SVG_ATTRS}><path d="m5 12 4.5 4.5L19 7"></path></svg>`,
     close: `<svg ${SVG_ATTRS}><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>`,
     pin: `<svg ${SVG_ATTRS}><path d="M12 17v5"></path><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"></path></svg>`,
-    megaphone: `<svg ${SVG_ATTRS}><path d="m3 11 14-5v12L3 13v-2Z"></path><path d="M17 9a3 3 0 0 1 0 6"></path><path d="M7 14.5 9 20h3l-1-5.5"></path></svg>`
+    megaphone: `<svg ${SVG_ATTRS}><path d="m3 11 14-5v12L3 13v-2Z"></path><path d="M17 9a3 3 0 0 1 0 6"></path><path d="M7 14.5 9 20h3l-1-5.5"></path></svg>`,
+    verified: `<svg ${SVG_ATTRS}><circle cx="12" cy="12" r="9"></circle><path d="m8.5 12.2 2.3 2.3 4.7-4.8"></path></svg>`,
+    crown: `<svg ${SVG_ATTRS}><path d="m3 17 2-9 4.5 4L12 5l2.5 7L19 8l2 9Z"></path><path d="M4 20h16"></path></svg>`,
+    download: `<svg ${SVG_ATTRS}><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M4 20h16"></path></svg>`,
+    clock: `<svg ${SVG_ATTRS}><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>`,
+    bookmark: `<svg ${SVG_ATTRS}><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z"></path></svg>`,
+    youtube: `<svg ${SVG_ATTRS}><rect x="2.5" y="5.5" width="19" height="13" rx="3.5"></rect><polygon points="10 9.5 15.5 12 10 14.5 10 9.5"></polygon></svg>`,
+    tiktok: `<svg ${SVG_ATTRS}><path d="M14 4v10.5a3.5 3.5 0 1 1-3-3.46"></path><path d="M14 4c1 2.2 2.8 3.5 5 3.8"></path></svg>`,
+    spotify: `<svg ${SVG_ATTRS}><circle cx="12" cy="12" r="9"></circle><path d="M7.5 10c3-.9 6.5-.6 9 .7"></path><path d="M8.5 13c2.4-.7 5.2-.4 7.2.6"></path><path d="M9.5 15.8c1.7-.5 3.7-.3 5.2.5"></path></svg>`
   };
 
   function createUmbralIcon(name, extraClass = "") {
